@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dayforma</title>
+    <script>
+      // GitHub Pages SPA redirect
+      // Stores the current path in a query param and redirects to index.html
+      // The app's SpaRedirectHandler component reads this and navigates
+      var base = '/CSC-710-AI-Calendar/';
+      var path = window.location.pathname;
+
+      if (path.startsWith(base)) {
+        path = '/' + path.slice(base.length);
+      }
+
+      var search = window.location.search;
+      var hash = window.location.hash;
+
+      window.location.replace(
+        base + '?redirect=' + encodeURIComponent(path + search + hash)
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
