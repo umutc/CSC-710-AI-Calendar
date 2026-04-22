@@ -2,8 +2,10 @@
 
 > AI-powered interactive calendar + todo manager. Shape your day.
 
+**Live demo:** https://umutc.github.io/CSC-710-AI-Calendar/
+
 **Course:** CSC 710 — Software Engineering, CUNY College of Staten Island (Spring 2026)
-**Team:** Umut Çelik · Merve Gazi · Justin
+**Team:** Umut Çelik · Merve Gazi · Justin Huang
 **Presentation:** May 13, 2026 · **Submission:** May 20, 2026
 
 ---

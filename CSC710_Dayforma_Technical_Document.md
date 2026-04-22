@@ -4,7 +4,7 @@
 
 **Version:** 1.0
 **Date:** April 22, 2026
-**Team:** Umut Çelik, Merve Gazi, Justin
+**Team:** Umut Çelik, Merve Gazi, Justin Huang
 **Presentation:** May 13, 2026
 **Submission:** May 20, 2026
 **Course:** CSC 710 — Software Engineering
@@ -1624,7 +1624,7 @@ The final report for CSC 710 must follow this structure. Page counts are guidanc
 
 ### Title Page (1 page)
 - Project title: **Dayforma — AI-Powered Interactive Calendar**
-- Team members: Umut Çelik · Merve Gazi · Justin
+- Team members: Umut Çelik · Merve Gazi · Justin Huang
 - Course: CSC 710 — Software Engineering
 - Institution: CUNY College of Staten Island
 - Semester: Spring 2026
@@ -1697,7 +1697,7 @@ AI + voice), and results (working live deployment, 48 issues closed, test covera
 - Team roles and responsibilities:
   - Umut — frontend lead + Claude Edge Function
   - Merve — backend / Supabase / Tests
-  - Justin — frontend / calendar / voice
+  - Justin Huang — frontend / calendar / voice
 - Methodology: Scrum with 4 sprints of ~1 week each.
 - Tooling: GitHub Issues + GitHub Projects board; weekly sync; WhatsApp for async.
 - Issues encountered and resolutions.
