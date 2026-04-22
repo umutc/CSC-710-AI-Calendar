@@ -43,6 +43,39 @@
 
 Full technical design: [`CSC710_Dayforma_Technical_Document.md`](./CSC710_Dayforma_Technical_Document.md).
 
+## Wireframes
+
+Low-fi pencil exploration — three variations per screen (AI prominence × layout density × novelty).
+Source PDF: [`docs/Dayforma-Wireframes.pdf`](./docs/Dayforma-Wireframes.pdf).
+
+### Overview
+![Overview](./docs/wireframes/01-overview.png)
+
+### Landing
+Typographic hero · live product peek · manifesto scroll.
+![Landing](./docs/wireframes/02-landing.png)
+
+### Auth (login / register / demo)
+Card · split brand+form · one-field progressive.
+![Auth](./docs/wireframes/03-auth.png)
+
+### Dashboard
+Classic split (PRD baseline) · AI-first command bar · timeline river.
+![Dashboard](./docs/wireframes/04-dashboard.png)
+
+### AI assistant surface
+Slide-out drawer · ⌘K command palette · ambient cards + Undo strip.
+![AI assistant](./docs/wireframes/05-ai-assistant.png)
+
+### Event + Todo modals
+Full form · conversational · inline side sheet.
+![Modals](./docs/wireframes/06-modals.png)
+
+### Mobile
+Agenda + bottom drawer · swipe tabs · voice-first lockscreen. Includes micro-states: Undo toast,
+voice listening, empty state, offline banner, demo banner, AI ambiguity prompt.
+![Mobile](./docs/wireframes/07-mobile.png)
+
 ## Quickstart
 
 ```bash
