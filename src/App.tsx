@@ -1,9 +1,9 @@
-import { BrowserRouter, Routes, Route } from "react-router";
-import { AuthProvider } from "./contexts/AuthContext";
+import { BrowserRouter, Route, Routes } from "react-router";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
+import DashboardPage from "./pages/DashboardPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
   return (
