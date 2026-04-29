@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
-import { Calendar, LogOut, Settings } from "lucide-react";
+import { Calendar, Check, LogOut, Pencil, Settings, Trash2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
@@ -14,12 +14,27 @@ type AgendaEvent = {
   tone: string;
 };
 
+type SortMode = "priority" | "due";
+
+type TodoDraft = {
+  title: string;
+  due_at: string;
+  priority: Priority;
+};
+
 const agenda: AgendaEvent[] = [
   { title: "Daily standup", time: "09:00", category: "Team", tone: "sky" },
   { title: "Calendar drop UX pass", time: "11:00", category: "Design", tone: "rose" },
   { title: "AI scheduling sync", time: "14:00", category: "Build", tone: "amber" },
   { title: "Evening study block", time: "19:00", category: "Focus", tone: "emerald" },
 ];
+
+const priorityOrder: Record<Priority, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
 
 function priorityClasses(priority: Priority) {
   switch (priority) {
@@ -46,6 +61,11 @@ function formatDue(due: string | null): string {
   if (isTomorrow(date)) return "Tomorrow";
   if (isThisWeek(date)) return format(date, "eee");
   return format(date, "MMM d");
+}
+
+function toDateInputValue(value: string | null): string {
+  if (!value) return "";
+  return value.slice(0, 10);
 }
 
 function toneClasses(tone: string) {
@@ -203,8 +223,31 @@ function CalendarPanel() {
   );
 }
 
-function TodoRow({ todo, onToggle }: { todo: Todo; onToggle: (id: string) => void }) {
+function TodoRow({
+  todo,
+  isEditing,
+  draft,
+  onEditStart,
+  onDraftChange,
+  onSave,
+  onCancel,
+  onDelete,
+  onToggle,
+  onEditKeyDown,
+}: {
+  todo: Todo;
+  isEditing: boolean;
+  draft: TodoDraft | null;
+  onEditStart: (todo: Todo) => void;
+  onDraftChange: (patch: Partial<TodoDraft>) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  onDelete: (id: string) => void;
+  onToggle: (id: string) => void;
+  onEditKeyDown: (event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void;
+}) {
   const done = todo.status === "done";
+
   return (
     <article
       className={`rounded-3xl border px-4 py-4 ${
@@ -216,34 +259,118 @@ function TodoRow({ todo, onToggle }: { todo: Todo; onToggle: (id: string) => voi
       <div className="flex items-start gap-3">
         <button
           aria-label={done ? "Mark as pending" : "Mark as done"}
-          className={`mt-1 h-4 w-4 shrink-0 rounded-full border transition ${
+          className={`mt-1 h-5 w-5 shrink-0 rounded-full border transition ${
             done
-              ? "border-emerald-300 bg-emerald-300"
-              : "border-slate-500 hover:border-emerald-300"
+              ? "border-emerald-300 bg-emerald-300 text-slate-950"
+              : todo.status === "scheduled"
+                ? "border-violet-300/60 bg-violet-500/15 text-violet-200 hover:border-emerald-300"
+                : "border-slate-500 text-transparent hover:border-emerald-300"
           }`}
           onClick={() => onToggle(todo.id)}
           type="button"
-        />
+        >
+          {done ? <Check className="h-3.5 w-3.5" /> : null}
+        </button>
+
         <div className="flex-1">
-          <p className={`font-medium ${done ? "line-through" : ""}`}>{todo.title}</p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-white/8 px-3 py-1 text-slate-300">
-              {formatDue(todo.due_at)}
-            </span>
-            <span className={`rounded-full px-3 py-1 ${priorityClasses(todo.priority)}`}>
-              {priorityLabel(todo.priority)}
-            </span>
-            {todo.status === "scheduled" && (
-              <span className="rounded-full bg-violet-500/15 px-3 py-1 text-violet-200">
-                Scheduled
-              </span>
-            )}
-            {todo.created_by_ai && (
-              <span className="rounded-full bg-cyan-500/15 px-3 py-1 text-cyan-200">
-                AI
-              </span>
-            )}
-          </div>
+          {isEditing && draft ? (
+            <div className="space-y-3">
+              <input
+                autoFocus
+                className="w-full rounded-2xl border border-cyan-400/30 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none ring-0 transition focus:border-cyan-300"
+                onChange={(event) => onDraftChange({ title: event.target.value })}
+                onKeyDown={onEditKeyDown}
+                placeholder="Todo title"
+                value={draft.title}
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyan-300"
+                  onChange={(event) => onDraftChange({ due_at: event.target.value })}
+                  onKeyDown={onEditKeyDown}
+                  type="date"
+                  value={draft.due_at}
+                />
+                <select
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyan-300"
+                  onChange={(event) => onDraftChange({ priority: event.target.value as Priority })}
+                  onKeyDown={onEditKeyDown}
+                  value={draft.priority}
+                >
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="rounded-full bg-cyan-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200"
+                  onClick={onSave}
+                  type="button"
+                >
+                  Save
+                </button>
+                <button
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+                  onClick={onCancel}
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <button
+                  className={`text-left font-medium transition hover:text-cyan-200 ${
+                    done ? "line-through text-slate-400" : "text-white"
+                  }`}
+                  onClick={() => onEditStart(todo)}
+                  type="button"
+                >
+                  {todo.title}
+                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-cyan-200"
+                    onClick={() => onEditStart(todo)}
+                    title="Edit todo"
+                    type="button"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-red-300"
+                    onClick={() => onDelete(todo.id)}
+                    title="Delete todo"
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full bg-white/8 px-3 py-1 text-slate-300">
+                  {formatDue(todo.due_at)}
+                </span>
+                <span className={`rounded-full px-3 py-1 ${priorityClasses(todo.priority)}`}>
+                  {priorityLabel(todo.priority)}
+                </span>
+                {todo.status === "scheduled" && (
+                  <span className="rounded-full bg-violet-500/15 px-3 py-1 text-violet-200">
+                    Scheduled
+                  </span>
+                )}
+                {todo.created_by_ai && (
+                  <span className="rounded-full bg-cyan-500/15 px-3 py-1 text-cyan-200">
+                    AI
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </article>
@@ -251,13 +378,110 @@ function TodoRow({ todo, onToggle }: { todo: Todo; onToggle: (id: string) => voi
 }
 
 function TodoPanel({ mobile = false }: { mobile?: boolean }) {
-  const { todos, loading, error, createTodo, toggleStatus } = useTodos();
+  const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
+  const [sortMode, setSortMode] = useState<SortMode>("priority");
+  const [newTitle, setNewTitle] = useState("");
+  const [newPriority, setNewPriority] = useState<Priority>("medium");
+  const [newDueAt, setNewDueAt] = useState("");
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<TodoDraft | null>(null);
+
   const activeCount = todos.filter((t) => t.status !== "done").length;
 
-  async function handleNewTodo() {
-    const title = window.prompt("New todo title");
-    if (!title || !title.trim()) return;
-    await createTodo({ title: title.trim() });
+  const sortedTodos = useMemo(() => {
+    const next = [...todos];
+    next.sort((a, b) => {
+      if (sortMode === "priority") {
+        const priorityDelta = priorityOrder[a.priority] - priorityOrder[b.priority];
+        if (priorityDelta !== 0) return priorityDelta;
+      } else {
+        if (a.due_at && b.due_at) {
+          const dueDelta = new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+          if (dueDelta !== 0) return dueDelta;
+        } else if (a.due_at && !b.due_at) {
+          return -1;
+        } else if (!a.due_at && b.due_at) {
+          return 1;
+        }
+      }
+
+      if (a.status !== b.status) {
+        if (a.status === "done") return 1;
+        if (b.status === "done") return -1;
+      }
+
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+    return next;
+  }, [sortMode, todos]);
+
+  async function handleCreateTodo() {
+    const trimmedTitle = newTitle.trim();
+    if (!trimmedTitle) return;
+
+    await createTodo({
+      title: trimmedTitle,
+      priority: newPriority,
+      due_at: newDueAt || null,
+    });
+
+    setNewTitle("");
+    setNewPriority("medium");
+    setNewDueAt("");
+  }
+
+  async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await handleCreateTodo();
+  }
+
+  function handleEditStart(todo: Todo) {
+    setEditingTodoId(todo.id);
+    setDraft({
+      title: todo.title,
+      due_at: toDateInputValue(todo.due_at),
+      priority: todo.priority,
+    });
+  }
+
+  function handleEditCancel() {
+    setEditingTodoId(null);
+    setDraft(null);
+  }
+
+  async function handleEditSave() {
+    if (!editingTodoId || !draft) return;
+
+    const trimmedTitle = draft.title.trim();
+    if (!trimmedTitle) return;
+
+    await updateTodo(editingTodoId, {
+      title: trimmedTitle,
+      due_at: draft.due_at || null,
+      priority: draft.priority,
+    });
+
+    handleEditCancel();
+  }
+
+  function handleEditKeyDown(event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleEditCancel();
+      return;
+    }
+
+    if (event.key === "Enter" && event.currentTarget.tagName !== "SELECT") {
+      event.preventDefault();
+      void handleEditSave();
+    }
+  }
+
+  async function handleDelete(id: string) {
+    await deleteTodo(id);
+    if (editingTodoId === id) {
+      handleEditCancel();
+    }
   }
 
   return (
@@ -268,7 +492,7 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Tasks</p>
             <h2 className="mt-2 text-2xl font-semibold text-white">Todo panel</h2>
             <p className="mt-2 text-sm text-slate-300">
-              A flexible side rail for tasks, quick capture, and scheduling actions.
+              Create, reorder, update, and clear tasks without leaving the dashboard.
             </p>
           </div>
           <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
@@ -276,13 +500,73 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
           </span>
         </div>
 
-        <button
-          className="mt-5 rounded-3xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
-          onClick={handleNewTodo}
-          type="button"
+        <form
+          className="mt-5 rounded-3xl border border-white/10 bg-white/[0.03] p-4"
+          onSubmit={handleCreateSubmit}
         >
-          + New todo
-        </button>
+          <div className="grid gap-3">
+            <input
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-white/20 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+              onChange={(event) => setNewTitle(event.target.value)}
+              placeholder="Add a todo title"
+              value={newTitle}
+            />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <select
+                className="w-full cursor-pointer rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition hover:border-white/20 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                onChange={(event) => setNewPriority(event.target.value as Priority)}
+                value={newPriority}
+              >
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <input
+                className="w-full cursor-pointer rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition hover:border-white/20 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                onChange={(event) => setNewDueAt(event.target.value)}
+                type="date"
+                value={newDueAt}
+              />
+              <button
+                className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                type="submit"
+              >
+                Add todo
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sort by</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                sortMode === "priority"
+                  ? "bg-cyan-300 text-slate-950"
+                  : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+              }`}
+              onClick={() => setSortMode("priority")}
+              type="button"
+            >
+              Priority
+            </button>
+            <button
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                sortMode === "due"
+                  ? "bg-cyan-300 text-slate-950"
+                  : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+              }`}
+              onClick={() => setSortMode("due")}
+              type="button"
+            >
+              Due date
+            </button>
+          </div>
+        </div>
 
         <div className="mt-5 space-y-3">
           {loading && (
@@ -295,22 +579,35 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
               {error}
             </p>
           )}
-          {!loading && !error && todos.length === 0 && (
+          {!loading && !error && sortedTodos.length === 0 && (
             <p className="rounded-3xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
-              No todos yet. Tap “+ New todo” to add one.
+              No todos yet. Use the form above to add your first task.
             </p>
           )}
           {!loading &&
-            todos.map((todo) => (
-              <TodoRow key={todo.id} todo={todo} onToggle={toggleStatus} />
+            !error &&
+            sortedTodos.map((todo) => (
+              <TodoRow
+                key={todo.id}
+                draft={editingTodoId === todo.id ? draft : null}
+                isEditing={editingTodoId === todo.id}
+                onCancel={handleEditCancel}
+                onDelete={handleDelete}
+                onDraftChange={(patch) => setDraft((current) => (current ? { ...current, ...patch } : current))}
+                onEditKeyDown={handleEditKeyDown}
+                onEditStart={handleEditStart}
+                onSave={handleEditSave}
+                onToggle={toggleStatus}
+                todo={todo}
+              />
             ))}
         </div>
 
         <div className="mt-5 rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-4">
-          <p className="text-sm font-semibold text-white">Mobile drawer behavior</p>
+          <p className="text-sm font-semibold text-white">Inline workflow</p>
           <p className="mt-2 text-sm text-slate-300">
-            On smaller screens this panel slides up as a drawer, so the calendar stays primary and
-            the task queue remains one tap away.
+            Click the status dot for one-tap completion, click a title or pencil to edit inline,
+            and use the sort pills to reprioritize the queue instantly.
           </p>
         </div>
       </div>
