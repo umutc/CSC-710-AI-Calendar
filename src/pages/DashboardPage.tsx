@@ -5,6 +5,7 @@ import { Calendar, LogOut, Settings } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
+import ThemeToggle from "../components/common/ThemeToggle";
 import type { Priority, Todo } from "../types";
 
 type AgendaEvent = {
@@ -123,6 +124,7 @@ function DashboardHeader({
           >
             <Settings className="h-5 w-5" />
           </button>
+          <ThemeToggle />
           <button
             className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/60 hover:text-red-400"
             onClick={onLogout}

@@ -1,6 +1,19 @@
 import { useNavigate } from "react-router";
-import { Calendar, ArrowLeft, User, Bell, CalendarDays, Shield } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  Calendar,
+  CalendarDays,
+  Monitor,
+  Moon,
+  Palette,
+  Shield,
+  Sun,
+  User,
+} from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
+import type { ThemePreference } from "../lib/themeUtils";
 
 const settingsSections = [
   {
@@ -63,6 +76,94 @@ function toneRing(tone: string) {
   }
 }
 
+const APPEARANCE_OPTIONS: ReadonlyArray<{
+  value: ThemePreference;
+  label: string;
+  description: string;
+  Icon: typeof Sun;
+}> = [
+  {
+    value: "light",
+    label: "Light",
+    description: "Bright surfaces, ideal for daylight.",
+    Icon: Sun,
+  },
+  {
+    value: "dark",
+    label: "Dark",
+    description: "Low-light palette, easy on the eyes after dusk.",
+    Icon: Moon,
+  },
+  {
+    value: "system",
+    label: "System",
+    description: "Follows your OS appearance setting automatically.",
+    Icon: Monitor,
+  },
+];
+
+function AppearanceSection() {
+  const { preference, setPreference } = useTheme();
+  return (
+    <section className="panel-surface mb-8 p-6">
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600">
+          <Palette className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-white">Appearance</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Choose how Dayforma looks on this device. The selection syncs to
+            your profile so other devices match.
+          </p>
+          <fieldset className="mt-5 grid gap-3 sm:grid-cols-3">
+            <legend className="sr-only">Theme preference</legend>
+            {APPEARANCE_OPTIONS.map((opt) => {
+              const checked = preference === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-3xl border px-4 py-3 transition ${
+                    checked
+                      ? "border-cyan-400/40 bg-cyan-300/10"
+                      : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <input
+                    checked={checked}
+                    className="sr-only"
+                    name="appearance"
+                    onChange={() => {
+                      void setPreference(opt.value);
+                    }}
+                    type="radio"
+                    value={opt.value}
+                  />
+                  <opt.Icon
+                    className={`mt-1 h-4 w-4 shrink-0 ${
+                      checked ? "text-cyan-200" : "text-slate-400"
+                    }`}
+                  />
+                  <div>
+                    <p
+                      className={`text-sm font-semibold ${
+                        checked ? "text-cyan-100" : "text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </p>
+                    <p className="text-xs text-slate-400">{opt.description}</p>
+                  </div>
+                </label>
+              );
+            })}
+          </fieldset>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -99,6 +200,8 @@ export default function SettingsPage() {
 
       {/* Content */}
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <AppearanceSection />
+
         {/* User info banner */}
         <div className="panel-surface mb-8 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
