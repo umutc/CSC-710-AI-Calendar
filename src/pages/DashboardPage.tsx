@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Calendar, LogOut, Settings } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import CalendarView from "../components/calendar/CalendarView";
 
-type CalendarEvent = {
+type AgendaEvent = {
   title: string;
   time: string;
   category: string;
@@ -17,80 +18,7 @@ type TodoItem = {
   done?: boolean;
 };
 
-const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-const monthCells = [
-  { day: 30, muted: true },
-  { day: 31, muted: true },
-  {
-    day: 1,
-    events: [{ title: "Sprint kickoff", time: "9:00 AM", category: "Team", tone: "sky" }],
-  },
-  { day: 2 },
-  {
-    day: 3,
-    events: [{ title: "Voice prototype", time: "1:30 PM", category: "Build", tone: "amber" }],
-  },
-  { day: 4 },
-  { day: 5 },
-  {
-    day: 6,
-    events: [{ title: "Office hours", time: "10:00 AM", category: "Campus", tone: "emerald" }],
-  },
-  { day: 7 },
-  { day: 8 },
-  {
-    day: 9,
-    events: [{ title: "UX review", time: "11:00 AM", category: "Design", tone: "rose" }],
-  },
-  { day: 10 },
-  {
-    day: 11,
-    events: [{ title: "AI parser QA", time: "3:00 PM", category: "QA", tone: "violet" }],
-  },
-  { day: 12 },
-  { day: 13 },
-  {
-    day: 14,
-    events: [{ title: "Demo dry run", time: "2:00 PM", category: "Team", tone: "sky" }],
-  },
-  { day: 15, selected: true },
-  { day: 16 },
-  {
-    day: 17,
-    events: [{ title: "Database check-in", time: "4:00 PM", category: "Backend", tone: "amber" }],
-  },
-  { day: 18 },
-  { day: 19 },
-  {
-    day: 20,
-    events: [{ title: "Study block", time: "6:30 PM", category: "Focus", tone: "emerald" }],
-  },
-  { day: 21 },
-  { day: 22 },
-  {
-    day: 23,
-    events: [{ title: "Presentation polish", time: "12:00 PM", category: "Slides", tone: "rose" }],
-  },
-  { day: 24 },
-  { day: 25 },
-  {
-    day: 26,
-    events: [{ title: "Feedback pass", time: "9:30 AM", category: "Review", tone: "violet" }],
-  },
-  { day: 27 },
-  { day: 28 },
-  {
-    day: 29,
-    events: [{ title: "Launch checklist", time: "5:00 PM", category: "Ops", tone: "sky" }],
-  },
-  { day: 30 },
-  { day: 1, muted: true },
-  { day: 2, muted: true },
-  { day: 3, muted: true },
-];
-
-const agenda: CalendarEvent[] = [
+const agenda: AgendaEvent[] = [
   { title: "Daily standup", time: "09:00", category: "Team", tone: "sky" },
   { title: "Calendar drop UX pass", time: "11:00", category: "Design", tone: "rose" },
   { title: "AI scheduling sync", time: "14:00", category: "Build", tone: "amber" },
@@ -197,69 +125,7 @@ function CalendarPanel() {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Calendar</p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">May 2026</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {["Month", "Week", "Day", "Agenda"].map((view, index) => (
-              <button
-                key={view}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  index === 0
-                    ? "bg-white text-slate-950"
-                    : "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
-                }`}
-                type="button"
-              >
-                {view}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-7 gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          {weekDays.map((day) => (
-            <div key={day} className="px-2 py-3">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-2">
-          {monthCells.map((cell, index) => (
-            <article
-              key={`${cell.day}-${index}`}
-              className={`min-h-28 rounded-3xl border p-3 transition sm:min-h-32 ${
-                cell.selected
-                  ? "border-cyan-300/60 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(103,232,249,0.2)]"
-                  : "border-white/8 bg-white/[0.03] hover:bg-white/[0.06]"
-              } ${cell.muted ? "text-slate-500" : "text-slate-100"}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">{cell.day}</span>
-                {cell.selected ? (
-                  <span className="rounded-full bg-cyan-300/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
-                    Today
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {cell.events?.map((event) => (
-                  <div
-                    key={event.title}
-                    className={`rounded-2xl px-2.5 py-2 text-xs ring-1 ${toneClasses(event.tone)}`}
-                  >
-                    <p className="font-semibold">{event.title}</p>
-                    <p className="mt-1 text-[11px] opacity-80">{event.time}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+        <CalendarView />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">

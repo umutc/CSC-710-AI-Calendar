@@ -25,9 +25,430 @@ body {
 }
 
 /* ─── FullCalendar overrides ──────────────────────────────────────────────── */
-.fc .fc-toolbar-title {
+
+/* Scope all overrides inside .fc-dayforma for isolation */
+.fc-dayforma .fc {
+  --fc-border-color: rgba(255, 255, 255, 0.06);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: transparent;
+  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.06);
+  --fc-today-bg-color: rgba(103, 232, 249, 0.06);
+  --fc-event-border-color: transparent;
+  --fc-now-indicator-color: #67e8f9;
+  font-family: inherit;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.fc-dayforma .fc .fc-toolbar {
+  margin-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center; /* PERFECT horizontal alignment across row 1 */
+  row-gap: 0.875rem; /* "bir tik daha asagida" (previously 0.5rem) */
+}
+
+/* Allow children of first chunk to become direct grid items */
+.fc-dayforma .fc .fc-toolbar-chunk:first-child {
+  display: contents;
+}
+
+/* 1. Prev/Next Group */
+.fc-dayforma .fc .fc-toolbar-chunk:first-child > .fc-button-group {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+/* 2. Today Button */
+.fc-dayforma .fc .fc-toolbar-chunk:first-child > .fc-today-button {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+  margin-left: 0 !important; /* Force left alignment */
+}
+
+/* 3. Center chunk: title */
+.fc-dayforma .fc .fc-toolbar-chunk:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  padding-left: 1.5rem; /* Fixed distance from prev/next buttons */
+}
+
+/* 4. Right chunk: view switchers */
+.fc-dayforma .fc .fc-toolbar-chunk:last-child {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  display: flex;
+  gap: 0.375rem;
+}
+
+.fc-dayforma .fc .fc-toolbar-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+
+/* All buttons: rounded pill style */
+.fc-dayforma .fc .fc-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  line-height: 1.4;
+}
+
+.fc-dayforma .fc .fc-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #f1f5f9;
+}
+
+.fc-dayforma .fc .fc-button:focus {
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.25);
+  outline: none;
+}
+
+/* Active view button */
+.fc-dayforma .fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc-dayforma .fc .fc-button-primary:not(:disabled):active {
+  background: #ffffff;
+  color: #020617;
+  border-color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(255, 255, 255, 0.15);
+}
+
+/* ── View switcher button group: add gaps between buttons ────────────────── */
+.fc-dayforma .fc .fc-button-group {
+  gap: 0.375rem;
+  display: flex;
+}
+
+.fc-dayforma .fc .fc-button-group > .fc-button {
+  border-radius: 9999px !important;
+  margin: 0 !important;
+}
+
+/* ── Column headers (Sun, Mon …) ─────────────────────────────────────────── */
+.fc-dayforma .fc .fc-col-header-cell {
+  padding: 0.875rem 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: none;
+}
+
+.fc-dayforma .fc .fc-col-header-cell-cushion {
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-decoration: none;
+}
+
+/* ── Scrollgrid & table: rounded outer frame ─────────────────────────────── */
+.fc-dayforma .fc table {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.fc-dayforma .fc .fc-scrollgrid {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.fc-dayforma .fc .fc-scrollgrid td,
+.fc-dayforma .fc .fc-scrollgrid th {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Day cells (Month view) ──────────────────────────────────────────────── */
+.fc-dayforma .fc .fc-daygrid-day {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+  min-height: 7rem;
+}
+
+.fc-dayforma .fc .fc-daygrid-day:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fc-dayforma .fc .fc-daygrid-day-frame {
+  padding: 0.25rem;
+}
+
+.fc-dayforma .fc .fc-daygrid-day-number {
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.5rem;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: background 0.15s;
+}
+
+.fc-dayforma .fc .fc-daygrid-day-number:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* "Other" month days */
+.fc-dayforma .fc .fc-day-other .fc-daygrid-day-number {
+  color: #334155;
+}
+
+.fc-dayforma .fc .fc-day-other {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Today highlight */
+.fc-dayforma .fc .fc-day-today {
+  background: rgba(103, 232, 249, 0.06) !important;
+}
+
+.fc-dayforma .fc .fc-day-today .fc-daygrid-day-number {
+  color: #67e8f9;
+  background: rgba(103, 232, 249, 0.15);
+  border-radius: 0.5rem;
+  font-weight: 700;
+}
+
+/* ── Events (Month view — colored rounded pills) ─────────────────────────── */
+.fc-dayforma .fc .fc-daygrid-event {
+  border-radius: 0.5rem;
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  margin: 1px 2px 2px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.fc-dayforma .fc .fc-daygrid-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fc-dayforma .fc .fc-daygrid-dot-event {
+  padding: 0.25rem 0.5rem;
+}
+
+.fc-dayforma .fc .fc-daygrid-dot-event .fc-event-title {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.fc-dayforma .fc .fc-daygrid-dot-event:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Past events dimming */
+.fc-dayforma .fc .fc-event-past {
+  opacity: 0.55;
+  filter: grayscale(40%);
+}
+
+.fc-dayforma .fc .fc-event-past:hover {
+  opacity: 0.8;
+  filter: grayscale(0%);
+}
+
+.fc-dayforma .fc .fc-h-event {
+  border: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.fc-dayforma .fc .fc-h-event .fc-event-main {
+  color: #ffffff;
+  padding: 0.125rem 0.375rem;
   font-weight: 600;
 }
+
+/* "+N more" link */
+.fc-dayforma .fc .fc-daygrid-more-link {
+  color: #67e8f9;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
+  transition: background 0.15s;
+}
+
+.fc-dayforma .fc .fc-daygrid-more-link:hover {
+  color: #a5f3fc;
+  background: rgba(103, 232, 249, 0.1);
+}
+
+/* ── Popover ("+N more" popup) ───────────────────────────────────────────── */
+.fc-dayforma .fc .fc-popover {
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.fc-dayforma .fc .fc-popover-header {
+  background: transparent;
+  color: #e2e8f0;
+  font-weight: 600;
+  padding: 0.75rem 1rem 0.5rem;
+}
+
+/* ── TimeGrid (Week / Day) overrides ─────────────────────────────────────── */
+
+/* Compact height for Week/Day — handled by FC internal scroller */
+.fc-dayforma .fc .fc-timegrid-slot {
+  border-color: rgba(255, 255, 255, 0.04);
+  height: 2.5rem;
+}
+
+.fc-dayforma .fc .fc-timegrid-slot-label-cushion {
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.fc-dayforma .fc .fc-timegrid-axis-cushion {
+  color: #64748b;
+  font-size: 0.6875rem;
+}
+
+.fc-dayforma .fc .fc-timegrid-col {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Now indicator */
+.fc-dayforma .fc .fc-timegrid-now-indicator-line {
+  border-color: #67e8f9;
+  border-width: 2px;
+  box-shadow: 0 0 8px rgba(103, 232, 249, 0.5);
+  position: relative;
+}
+
+.fc-dayforma .fc .fc-timegrid-now-indicator-line::after {
+  content: "Now";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -14px;
+  background: #67e8f9;
+  color: #0f172a;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.1rem 0.375rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+}
+
+.fc-dayforma .fc .fc-timegrid-now-indicator-arrow {
+  border-color: #67e8f9;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+}
+
+/* Events in Week/Day — vibrant rounded blocks */
+.fc-dayforma .fc .fc-timegrid-event {
+  border-radius: 0.5rem;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fc-dayforma .fc .fc-timegrid-event:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.fc-dayforma .fc .fc-timegrid-event .fc-event-main {
+  color: #ffffff;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.75rem;
+}
+
+.fc-dayforma .fc .fc-timegrid-event .fc-event-time {
+  font-weight: 700;
+  font-size: 0.6875rem;
+}
+
+/* All-day slot */
+.fc-dayforma .fc .fc-daygrid-body {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ── List (Agenda) view overrides ────────────────────────────────────────── */
+.fc-dayforma .fc .fc-list {
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.fc-dayforma .fc .fc-list-day-cushion {
+  background: rgba(255, 255, 255, 0.03);
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+}
+
+.fc-dayforma .fc .fc-list-day-cushion a {
+  color: #e2e8f0;
+  text-decoration: none;
+}
+
+.fc-dayforma .fc .fc-list-event {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.04);
+  transition: background 0.15s;
+}
+
+.fc-dayforma .fc .fc-list-event:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fc-dayforma .fc .fc-list-event td {
+  padding: 0.625rem 1rem;
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.fc-dayforma .fc .fc-list-event-time {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.fc-dayforma .fc .fc-list-event-title a {
+  color: #f1f5f9;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.fc-dayforma .fc .fc-list-event-dot {
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+}
+
+.fc-dayforma .fc .fc-list-empty {
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
 
 /* ─── Dashboard panel surface ─────────────────────────────────────────────── */
 .panel-surface {
