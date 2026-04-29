@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Calendar, LogOut } from "lucide-react";
+import { Calendar, LogOut, Settings } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 type CalendarEvent = {
@@ -124,10 +124,12 @@ function toneClasses(tone: string) {
 function DashboardHeader({
   displayName,
   onLogout,
+  onOpenSettings,
   onOpenTodos,
 }: {
   displayName: string;
   onLogout: () => void;
+  onOpenSettings: () => void;
   onOpenTodos: () => void;
 }) {
   return (
@@ -168,6 +170,14 @@ function DashboardHeader({
             type="button"
           >
             Open todos
+          </button>
+          <button
+            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/60 hover:text-cyan-300"
+            onClick={onOpenSettings}
+            title="Settings"
+            type="button"
+          >
+            <Settings className="h-5 w-5" />
           </button>
           <button
             className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/60 hover:text-red-400"
@@ -400,6 +410,7 @@ export default function DashboardPage() {
       <DashboardHeader
         displayName={profile?.display_name ?? user?.email ?? "there"}
         onLogout={handleLogout}
+        onOpenSettings={() => navigate("/settings")}
         onOpenTodos={() => setMobileDrawerOpen(true)}
       />
 
