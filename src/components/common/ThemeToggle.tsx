@@ -10,7 +10,7 @@ export default function ThemeToggle() {
   return (
     <button
       aria-label={label}
-      className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/60 hover:text-cyan-300"
+      className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-cyan-700 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-cyan-300"
       onClick={() => {
         void toggle();
       }}

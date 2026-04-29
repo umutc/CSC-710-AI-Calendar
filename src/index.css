@@ -6,10 +6,14 @@
 :root {
   font-family: "Satoshi", "Avenir Next", "Segoe UI", sans-serif;
   color-scheme: dark light;
+
+  /* App background */
   --bg-app:
     radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 28%),
     linear-gradient(180deg, #020617 0%, #0f172a 58%, #111827 100%);
   --bg-root: #020617;
+
+  /* Surface tiers */
   --panel-surface-bg: linear-gradient(
     180deg,
     rgba(15, 23, 42, 0.92),
@@ -19,24 +23,205 @@
   --panel-surface-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 24px 60px rgba(2, 6, 23, 0.35);
+
+  --surface-elevated: rgba(255, 255, 255, 0.03);
+  --surface-elevated-hover: rgba(255, 255, 255, 0.06);
+  --surface-input: rgba(2, 6, 23, 0.7);
+  --surface-header: rgba(2, 6, 23, 0.8);
+  --surface-popover: rgba(15, 23, 42, 0.96);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --border-dashed: rgba(255, 255, 255, 0.15);
+
+  /* Text */
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+
+  /* Accent */
+  --accent: #67e8f9;
+  --accent-text: #67e8f9;
+  --accent-soft-bg: rgba(103, 232, 249, 0.10);
+  --accent-soft-border: rgba(103, 232, 249, 0.30);
+  --focus-ring: rgba(103, 232, 249, 0.45);
+
+  /* Interactive states */
+  --icon-btn-fg: #94a3b8;
+  --icon-btn-hover-bg: rgba(30, 41, 59, 0.6);
+  --btn-ghost-bg: rgba(255, 255, 255, 0.05);
+  --btn-ghost-border: rgba(255, 255, 255, 0.10);
+  --btn-ghost-hover-bg: rgba(255, 255, 255, 0.10);
+
+  /* FullCalendar tokens (dark defaults) */
+  --fc-text-primary: #f1f5f9;
+  --fc-text-secondary: #e2e8f0;
+  --fc-text-muted: #64748b;
+  --fc-text-faint: #94a3b8;
+  --fc-text-other-month: #334155;
+
+  --fc-bg-other-month: rgba(0, 0, 0, 0.12);
+  --fc-bg-col-header: rgba(255, 255, 255, 0.02);
+  --fc-bg-list-day: rgba(255, 255, 255, 0.03);
+
+  --fc-button-bg: rgba(255, 255, 255, 0.05);
+  --fc-button-border: rgba(255, 255, 255, 0.12);
+  --fc-button-hover-bg: rgba(255, 255, 255, 0.1);
+  --fc-button-hover-border: rgba(255, 255, 255, 0.25);
+  --fc-button-active-bg: #ffffff;
+  --fc-button-active-fg: #020617;
+  --fc-button-active-shadow: 0 2px 12px rgba(255, 255, 255, 0.15);
+
+  --fc-event-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
+  --fc-event-shadow-strong: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --fc-event-inner-stroke: rgba(255, 255, 255, 0.10);
+  --fc-event-text: #ffffff;
+
+  --fc-day-hover-bg: rgba(255, 255, 255, 0.03);
+  --fc-daynum-hover-bg: rgba(255, 255, 255, 0.06);
+  --fc-dot-event-hover-bg: rgba(255, 255, 255, 0.08);
+  --fc-list-event-hover-bg: rgba(255, 255, 255, 0.05);
+
+  --fc-popover-bg: rgba(15, 23, 42, 0.96);
+  --fc-popover-border: rgba(255, 255, 255, 0.12);
+  --fc-popover-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+
+  --fc-now-indicator: #67e8f9;
+  --fc-now-indicator-glow: 0 0 8px rgba(103, 232, 249, 0.5);
+  --fc-now-indicator-pill-bg: #67e8f9;
+  --fc-now-indicator-pill-fg: #0f172a;
+
+  --fc-today-bg: rgba(103, 232, 249, 0.06);
+  --fc-today-num-fg: #67e8f9;
+  --fc-today-num-bg: rgba(103, 232, 249, 0.15);
+
+  --fc-more-link-fg: #67e8f9;
+  --fc-more-link-hover-fg: #a5f3fc;
+  --fc-more-link-hover-bg: rgba(103, 232, 249, 0.10);
+
+  /* Glass card / login surfaces */
+  --glass-card-bg: rgba(15, 23, 42, 0.6);
+  --glass-card-border: rgba(148, 163, 184, 0.10);
+  --glass-card-border-hover: rgba(148, 163, 184, 0.20);
+  --glass-card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.30);
+
+  --input-bg: rgba(15, 23, 42, 0.5);
+  --input-border: rgba(148, 163, 184, 0.15);
+  --input-fg: #e2e8f0;
+  --input-placeholder: #475569;
+  --input-focus-border: #6366f1;
+  --input-focus-ring: rgba(99, 102, 241, 0.15);
+
+  --grid-line: rgba(148, 163, 184, 0.08);
+
   background: var(--bg-root);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
+
   --bg-app:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 32%),
-    linear-gradient(180deg, #f8fafc 0%, #e2e8f0 58%, #cbd5e1 100%);
+    radial-gradient(circle at top, rgba(14, 165, 233, 0.10), transparent 32%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 60%, #e2e8f0 100%);
   --bg-root: #f8fafc;
+
   --panel-surface-bg: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.92),
-    rgba(248, 250, 252, 0.74)
+    rgba(255, 255, 255, 0.96),
+    rgba(248, 250, 252, 0.82)
   );
-  --panel-surface-border: rgba(15, 23, 42, 0.10);
+  --panel-surface-border: rgba(15, 23, 42, 0.08);
   --panel-surface-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 24px 60px rgba(15, 23, 42, 0.10);
+    0 18px 40px rgba(15, 23, 42, 0.06);
+
+  --surface-elevated: rgba(15, 23, 42, 0.04);
+  --surface-elevated-hover: rgba(15, 23, 42, 0.07);
+  --surface-input: rgba(255, 255, 255, 0.92);
+  --surface-header: rgba(248, 250, 252, 0.85);
+  --surface-popover: rgba(255, 255, 255, 0.96);
+
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-faint: rgba(15, 23, 42, 0.05);
+  --border-dashed: rgba(15, 23, 42, 0.18);
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --text-faint: #64748b;
+
+  --accent: #0891b2;
+  --accent-text: #0e7490;
+  --accent-soft-bg: rgba(8, 145, 178, 0.10);
+  --accent-soft-border: rgba(8, 145, 178, 0.40);
+  --focus-ring: rgba(14, 116, 144, 0.45);
+
+  --icon-btn-fg: #475569;
+  --icon-btn-hover-bg: rgba(15, 23, 42, 0.06);
+  --btn-ghost-bg: rgba(15, 23, 42, 0.04);
+  --btn-ghost-border: rgba(15, 23, 42, 0.10);
+  --btn-ghost-hover-bg: rgba(15, 23, 42, 0.08);
+
+  /* FullCalendar light overrides */
+  --fc-text-primary: #0f172a;
+  --fc-text-secondary: #1e293b;
+  --fc-text-muted: #64748b;
+  --fc-text-faint: #94a3b8;
+  --fc-text-other-month: #cbd5e1;
+
+  --fc-bg-other-month: rgba(15, 23, 42, 0.03);
+  --fc-bg-col-header: rgba(15, 23, 42, 0.03);
+  --fc-bg-list-day: rgba(15, 23, 42, 0.04);
+
+  --fc-button-bg: rgba(15, 23, 42, 0.04);
+  --fc-button-border: rgba(15, 23, 42, 0.10);
+  --fc-button-hover-bg: rgba(15, 23, 42, 0.07);
+  --fc-button-hover-border: rgba(15, 23, 42, 0.20);
+  --fc-button-active-bg: #0f172a;
+  --fc-button-active-fg: #ffffff;
+  --fc-button-active-shadow: 0 2px 12px rgba(15, 23, 42, 0.20);
+
+  --fc-event-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  --fc-event-shadow-strong: 0 6px 20px rgba(15, 23, 42, 0.20);
+  --fc-event-inner-stroke: rgba(255, 255, 255, 0.30);
+
+  --fc-day-hover-bg: rgba(15, 23, 42, 0.03);
+  --fc-daynum-hover-bg: rgba(15, 23, 42, 0.07);
+  --fc-dot-event-hover-bg: rgba(15, 23, 42, 0.06);
+  --fc-list-event-hover-bg: rgba(15, 23, 42, 0.04);
+
+  --fc-popover-bg: rgba(255, 255, 255, 0.96);
+  --fc-popover-border: rgba(15, 23, 42, 0.10);
+  --fc-popover-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+
+  --fc-now-indicator: #0891b2;
+  --fc-now-indicator-glow: 0 0 8px rgba(8, 145, 178, 0.45);
+  --fc-now-indicator-pill-bg: #0891b2;
+  --fc-now-indicator-pill-fg: #ffffff;
+
+  --fc-today-bg: rgba(8, 145, 178, 0.08);
+  --fc-today-num-fg: #0e7490;
+  --fc-today-num-bg: rgba(8, 145, 178, 0.16);
+
+  --fc-more-link-fg: #0891b2;
+  --fc-more-link-hover-fg: #155e75;
+  --fc-more-link-hover-bg: rgba(8, 145, 178, 0.10);
+
+  --glass-card-bg: rgba(255, 255, 255, 0.85);
+  --glass-card-border: rgba(15, 23, 42, 0.10);
+  --glass-card-border-hover: rgba(15, 23, 42, 0.18);
+  --glass-card-shadow-hover: 0 8px 32px rgba(15, 23, 42, 0.12);
+
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --input-border: rgba(15, 23, 42, 0.12);
+  --input-fg: #0f172a;
+  --input-placeholder: #94a3b8;
+  --input-focus-border: #6366f1;
+  --input-focus-ring: rgba(99, 102, 241, 0.20);
+
+  --grid-line: rgba(15, 23, 42, 0.06);
 }
 
 * {
@@ -58,13 +243,13 @@ body {
 
 /* Scope all overrides inside .fc-dayforma for isolation */
 .fc-dayforma .fc {
-  --fc-border-color: rgba(255, 255, 255, 0.06);
+  --fc-border-color: var(--border-faint);
   --fc-page-bg-color: transparent;
   --fc-neutral-bg-color: transparent;
-  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.06);
-  --fc-today-bg-color: rgba(103, 232, 249, 0.06);
+  --fc-list-event-hover-bg-color: var(--fc-list-event-hover-bg);
+  --fc-today-bg-color: var(--fc-today-bg);
   --fc-event-border-color: transparent;
-  --fc-now-indicator-color: #67e8f9;
+  --fc-now-indicator-color: var(--fc-now-indicator);
   font-family: inherit;
 }
 
@@ -74,41 +259,36 @@ body {
   display: grid;
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto auto;
-  align-items: center; /* PERFECT horizontal alignment across row 1 */
-  row-gap: 0.875rem; /* "bir tik daha asagida" (previously 0.5rem) */
+  align-items: center;
+  row-gap: 0.875rem;
 }
 
-/* Allow children of first chunk to become direct grid items */
 .fc-dayforma .fc .fc-toolbar-chunk:first-child {
   display: contents;
 }
 
-/* 1. Prev/Next Group */
 .fc-dayforma .fc .fc-toolbar-chunk:first-child > .fc-button-group {
   grid-column: 1;
   grid-row: 1;
   justify-self: start;
 }
 
-/* 2. Today Button */
 .fc-dayforma .fc .fc-toolbar-chunk:first-child > .fc-today-button {
   grid-column: 1;
   grid-row: 2;
   justify-self: start;
-  margin-left: 0 !important; /* Force left alignment */
+  margin-left: 0 !important;
 }
 
-/* 3. Center chunk: title */
 .fc-dayforma .fc .fc-toolbar-chunk:nth-child(2) {
   grid-column: 2;
   grid-row: 1;
   justify-self: start;
   display: flex;
   align-items: center;
-  padding-left: 1.5rem; /* Fixed distance from prev/next buttons */
+  padding-left: 1.5rem;
 }
 
-/* 4. Right chunk: view switchers */
 .fc-dayforma .fc .fc-toolbar-chunk:last-child {
   grid-column: 3;
   grid-row: 1;
@@ -120,15 +300,15 @@ body {
 .fc-dayforma .fc .fc-toolbar-title {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--fc-text-primary);
   letter-spacing: -0.01em;
 }
 
 /* All buttons: rounded pill style */
 .fc-dayforma .fc .fc-button {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
+  background: var(--fc-button-bg);
+  border: 1px solid var(--fc-button-border);
+  color: var(--fc-text-secondary);
   font-weight: 500;
   font-size: 0.8125rem;
   padding: 0.4rem 1rem;
@@ -140,24 +320,24 @@ body {
 }
 
 .fc-dayforma .fc .fc-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #f1f5f9;
+  background: var(--fc-button-hover-bg);
+  border-color: var(--fc-button-hover-border);
+  color: var(--fc-text-primary);
 }
 
 .fc-dayforma .fc .fc-button:focus {
-  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.25);
+  box-shadow: 0 0 0 2px var(--focus-ring);
   outline: none;
 }
 
 /* Active view button */
 .fc-dayforma .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc-dayforma .fc .fc-button-primary:not(:disabled):active {
-  background: #ffffff;
-  color: #020617;
-  border-color: #ffffff;
+  background: var(--fc-button-active-bg);
+  color: var(--fc-button-active-fg);
+  border-color: var(--fc-button-active-bg);
   font-weight: 600;
-  box-shadow: 0 2px 12px rgba(255, 255, 255, 0.15);
+  box-shadow: var(--fc-button-active-shadow);
 }
 
 /* ── View switcher button group: add gaps between buttons ────────────────── */
@@ -174,12 +354,12 @@ body {
 /* ── Column headers (Sun, Mon …) ─────────────────────────────────────────── */
 .fc-dayforma .fc .fc-col-header-cell {
   padding: 0.875rem 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--fc-bg-col-header);
   border: none;
 }
 
 .fc-dayforma .fc .fc-col-header-cell-cushion {
-  color: #64748b;
+  color: var(--fc-text-muted);
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -189,30 +369,30 @@ body {
 
 /* ── Scrollgrid & table: rounded outer frame ─────────────────────────────── */
 .fc-dayforma .fc table {
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-faint);
 }
 
 .fc-dayforma .fc .fc-scrollgrid {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 1.25rem;
   overflow: hidden;
 }
 
 .fc-dayforma .fc .fc-scrollgrid td,
 .fc-dayforma .fc .fc-scrollgrid th {
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-faint);
 }
 
 /* ── Day cells (Month view) ──────────────────────────────────────────────── */
 .fc-dayforma .fc .fc-daygrid-day {
   background: transparent;
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-faint);
   transition: background 0.2s ease;
   min-height: 7rem;
 }
 
 .fc-dayforma .fc .fc-daygrid-day:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--fc-day-hover-bg);
 }
 
 .fc-dayforma .fc .fc-daygrid-day-frame {
@@ -220,7 +400,7 @@ body {
 }
 
 .fc-dayforma .fc .fc-daygrid-day-number {
-  color: #e2e8f0;
+  color: var(--fc-text-secondary);
   font-weight: 600;
   font-size: 0.8125rem;
   padding: 0.375rem 0.5rem;
@@ -230,26 +410,26 @@ body {
 }
 
 .fc-dayforma .fc .fc-daygrid-day-number:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fc-daynum-hover-bg);
 }
 
 /* "Other" month days */
 .fc-dayforma .fc .fc-day-other .fc-daygrid-day-number {
-  color: #334155;
+  color: var(--fc-text-other-month);
 }
 
 .fc-dayforma .fc .fc-day-other {
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--fc-bg-other-month);
 }
 
 /* Today highlight */
 .fc-dayforma .fc .fc-day-today {
-  background: rgba(103, 232, 249, 0.06) !important;
+  background: var(--fc-today-bg) !important;
 }
 
 .fc-dayforma .fc .fc-day-today .fc-daygrid-day-number {
-  color: #67e8f9;
-  background: rgba(103, 232, 249, 0.15);
+  color: var(--fc-today-num-fg);
+  background: var(--fc-today-num-bg);
   border-radius: 0.5rem;
   font-weight: 700;
 }
@@ -268,7 +448,7 @@ body {
 
 .fc-dayforma .fc .fc-daygrid-event:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--fc-event-shadow);
 }
 
 .fc-dayforma .fc .fc-daygrid-dot-event {
@@ -277,11 +457,11 @@ body {
 
 .fc-dayforma .fc .fc-daygrid-dot-event .fc-event-title {
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--fc-text-primary);
 }
 
 .fc-dayforma .fc .fc-daygrid-dot-event:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--fc-dot-event-hover-bg);
 }
 
 /* Past events dimming */
@@ -297,18 +477,18 @@ body {
 
 .fc-dayforma .fc .fc-h-event {
   border: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px var(--fc-event-inner-stroke);
 }
 
 .fc-dayforma .fc .fc-h-event .fc-event-main {
-  color: #ffffff;
+  color: var(--fc-event-text);
   padding: 0.125rem 0.375rem;
   font-weight: 600;
 }
 
 /* "+N more" link */
 .fc-dayforma .fc .fc-daygrid-more-link {
-  color: #67e8f9;
+  color: var(--fc-more-link-fg);
   font-size: 0.6875rem;
   font-weight: 700;
   text-decoration: none;
@@ -318,55 +498,53 @@ body {
 }
 
 .fc-dayforma .fc .fc-daygrid-more-link:hover {
-  color: #a5f3fc;
-  background: rgba(103, 232, 249, 0.1);
+  color: var(--fc-more-link-hover-fg);
+  background: var(--fc-more-link-hover-bg);
 }
 
 /* ── Popover ("+N more" popup) ───────────────────────────────────────────── */
 .fc-dayforma .fc .fc-popover {
-  background: rgba(15, 23, 42, 0.96);
+  background: var(--fc-popover-bg);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--fc-popover-border);
   border-radius: 1rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--fc-popover-shadow);
 }
 
 .fc-dayforma .fc .fc-popover-header {
   background: transparent;
-  color: #e2e8f0;
+  color: var(--fc-text-secondary);
   font-weight: 600;
   padding: 0.75rem 1rem 0.5rem;
 }
 
 /* ── TimeGrid (Week / Day) overrides ─────────────────────────────────────── */
-
-/* Compact height for Week/Day — handled by FC internal scroller */
 .fc-dayforma .fc .fc-timegrid-slot {
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-faint);
   height: 2.5rem;
 }
 
 .fc-dayforma .fc .fc-timegrid-slot-label-cushion {
-  color: #64748b;
+  color: var(--fc-text-muted);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.03em;
 }
 
 .fc-dayforma .fc .fc-timegrid-axis-cushion {
-  color: #64748b;
+  color: var(--fc-text-muted);
   font-size: 0.6875rem;
 }
 
 .fc-dayforma .fc .fc-timegrid-col {
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-faint);
 }
 
 /* Now indicator */
 .fc-dayforma .fc .fc-timegrid-now-indicator-line {
-  border-color: #67e8f9;
+  border-color: var(--fc-now-indicator);
   border-width: 2px;
-  box-shadow: 0 0 8px rgba(103, 232, 249, 0.5);
+  box-shadow: var(--fc-now-indicator-glow);
   position: relative;
 }
 
@@ -376,8 +554,8 @@ body {
   left: 50%;
   transform: translateX(-50%);
   top: -14px;
-  background: #67e8f9;
-  color: #0f172a;
+  background: var(--fc-now-indicator-pill-bg);
+  color: var(--fc-now-indicator-pill-fg);
   font-size: 0.6rem;
   font-weight: 700;
   padding: 0.1rem 0.375rem;
@@ -386,7 +564,7 @@ body {
 }
 
 .fc-dayforma .fc .fc-timegrid-now-indicator-arrow {
-  border-color: #67e8f9;
+  border-color: var(--fc-now-indicator);
   border-top-color: transparent;
   border-bottom-color: transparent;
 }
@@ -395,17 +573,18 @@ body {
 .fc-dayforma .fc .fc-timegrid-event {
   border-radius: 0.5rem;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--fc-event-shadow), inset 0 0 0 1px var(--fc-event-inner-stroke);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .fc-dayforma .fc .fc-timegrid-event:hover {
   transform: scale(1.02);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  box-shadow: var(--fc-event-shadow-strong),
+    inset 0 0 0 1px var(--fc-event-inner-stroke);
 }
 
 .fc-dayforma .fc .fc-timegrid-event .fc-event-main {
-  color: #ffffff;
+  color: var(--fc-event-text);
   padding: 0.25rem 0.375rem;
   font-size: 0.75rem;
 }
@@ -417,52 +596,52 @@ body {
 
 /* All-day slot */
 .fc-dayforma .fc .fc-daygrid-body {
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-faint);
 }
 
 /* ── List (Agenda) view overrides ────────────────────────────────────────── */
 .fc-dayforma .fc .fc-list {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-subtle);
   border-radius: 1.25rem;
   overflow: hidden;
 }
 
 .fc-dayforma .fc .fc-list-day-cushion {
-  background: rgba(255, 255, 255, 0.03);
-  color: #e2e8f0;
+  background: var(--fc-bg-list-day);
+  color: var(--fc-text-secondary);
   font-weight: 700;
   font-size: 0.875rem;
   padding: 0.75rem 1rem;
 }
 
 .fc-dayforma .fc .fc-list-day-cushion a {
-  color: #e2e8f0;
+  color: var(--fc-text-secondary);
   text-decoration: none;
 }
 
 .fc-dayforma .fc .fc-list-event {
   background: transparent;
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-faint);
   transition: background 0.15s;
 }
 
 .fc-dayforma .fc .fc-list-event:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--fc-list-event-hover-bg);
 }
 
 .fc-dayforma .fc .fc-list-event td {
   padding: 0.625rem 1rem;
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-faint);
 }
 
 .fc-dayforma .fc .fc-list-event-time {
-  color: #94a3b8;
+  color: var(--fc-text-faint);
   font-weight: 600;
   font-size: 0.8125rem;
 }
 
 .fc-dayforma .fc .fc-list-event-title a {
-  color: #f1f5f9;
+  color: var(--fc-text-primary);
   text-decoration: none;
   font-weight: 600;
 }
@@ -475,7 +654,7 @@ body {
 
 .fc-dayforma .fc .fc-list-empty {
   background: transparent;
-  color: #64748b;
+  color: var(--fc-text-muted);
   font-size: 0.875rem;
 }
 
@@ -491,16 +670,16 @@ body {
 
 /* ─── Glass card ──────────────────────────────────────────────────────────── */
 .glass-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--glass-card-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  border: 1px solid var(--glass-card-border);
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .glass-card:hover {
-  border-color: rgba(148, 163, 184, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: var(--glass-card-border-hover);
+  box-shadow: var(--glass-card-shadow-hover);
 }
 
 /* ─── Input fields ────────────────────────────────────────────────────────── */
@@ -509,21 +688,21 @@ body {
   padding: 0.625rem 0.75rem;
   padding-left: 2.5rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  background: rgba(15, 23, 42, 0.5);
-  color: #e2e8f0;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-fg);
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-field::placeholder {
-  color: #475569;
+  color: var(--input-placeholder);
 }
 
 .input-field:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 
 /* ─── Primary button ──────────────────────────────────────────────────────── */
@@ -571,8 +750,8 @@ body {
 /* ─── Background grid pattern ─────────────────────────────────────────────── */
 .bg-grid-pattern {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 60px 60px;
 }
 

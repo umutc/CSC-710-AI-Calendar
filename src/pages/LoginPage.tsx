@@ -119,16 +119,16 @@ export default function LoginPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden flex items-center justify-center px-4">
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4">
       {/* Background effects */}
-      <div className="absolute top-[-30%] right-[-15%] w-[500px] h-[500px] rounded-full bg-indigo-600/15 blur-[100px]" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-violet-600/10 blur-[80px]" />
+      <div className="absolute top-[-30%] right-[-15%] w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[100px] dark:bg-indigo-600/15" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-violet-500/10 blur-[80px] dark:bg-violet-600/10" />
 
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Back to landing */}
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-300 transition-colors mb-8 group"
+          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-8 group dark:text-slate-500 dark:hover:text-slate-300"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Back to Dayforma
@@ -141,10 +141,10 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 mb-4">
               <Calendar className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-100">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {mode === "login" ? "Welcome back" : "Create an account"}
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-600 mt-1 dark:text-slate-400">
               {mode === "login"
                 ? "Sign in to your Dayforma account"
                 : "Start shaping your day"}
@@ -153,7 +153,7 @@ export default function LoginPage() {
 
           {/* Error message */}
           {error && (
-            <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center animate-shake">
+            <div className="mb-6 p-3 rounded-lg bg-red-100 border border-red-400/40 text-red-700 text-sm text-center animate-shake dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400">
               {error}
             </div>
           )}
@@ -168,7 +168,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="login-email"
-                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300"
                 >
                   Email
                 </label>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                   />
                 </div>
                 {loginForm.formState.errors.email && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-red-600 mt-1 dark:text-red-400">
                     {loginForm.formState.errors.email.message}
                   </p>
                 )}
@@ -195,7 +195,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="login-password"
-                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300"
                 >
                   Password
                 </label>
@@ -213,7 +213,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 transition-colors dark:hover:text-slate-300"
                     tabIndex={-1}
                   >
                     {showPassword ? (
@@ -224,7 +224,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {loginForm.formState.errors.password && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-red-600 mt-1 dark:text-red-400">
                     {loginForm.formState.errors.password.message}
                   </p>
                 )}
@@ -255,7 +255,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="register-name"
-                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300"
                 >
                   Display Name
                 </label>
@@ -280,7 +280,7 @@ export default function LoginPage() {
                   />
                 </div>
                 {registerForm.formState.errors.displayName && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-red-600 mt-1 dark:text-red-400">
                     {registerForm.formState.errors.displayName.message}
                   </p>
                 )}
@@ -290,7 +290,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="register-email"
-                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300"
                 >
                   Email
                 </label>
@@ -307,7 +307,7 @@ export default function LoginPage() {
                   />
                 </div>
                 {registerForm.formState.errors.email && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-red-600 mt-1 dark:text-red-400">
                     {registerForm.formState.errors.email.message}
                   </p>
                 )}
@@ -317,7 +317,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="register-password"
-                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300"
                 >
                   Password
                 </label>
@@ -339,7 +339,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 transition-colors dark:hover:text-slate-300"
                     tabIndex={-1}
                   >
                     {showPassword ? (
@@ -350,7 +350,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {registerForm.formState.errors.password && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-red-600 mt-1 dark:text-red-400">
                     {registerForm.formState.errors.password.message}
                   </p>
                 )}
@@ -360,7 +360,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="register-confirm"
-                  className="block text-sm font-medium text-slate-300 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300"
                 >
                   Confirm Password
                 </label>
@@ -380,7 +380,7 @@ export default function LoginPage() {
                   />
                 </div>
                 {registerForm.formState.errors.confirmPassword && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-red-600 mt-1 dark:text-red-400">
                     {registerForm.formState.errors.confirmPassword.message}
                   </p>
                 )}
@@ -404,10 +404,10 @@ export default function LoginPage() {
           {/* ─── Divider ────────────────────────────────────────────────── */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-700/50" />
+              <div className="w-full border-t border-slate-900/15 dark:border-slate-700/50" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-slate-900/80 text-slate-500">or</span>
+              <span className="px-3 bg-white/95 text-slate-500 dark:bg-slate-900/80">or</span>
             </div>
           </div>
 
@@ -416,12 +416,12 @@ export default function LoginPage() {
             id="demo-btn"
             onClick={handleDemo}
             disabled={demoLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-700/50 bg-slate-800/40 text-slate-300 text-sm font-medium hover:bg-slate-800/70 hover:border-slate-600/50 active:scale-[0.98] transition-all duration-200"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-900/15 bg-slate-900/[0.04] text-slate-700 text-sm font-medium hover:bg-slate-900/[0.08] hover:border-slate-900/25 active:scale-[0.98] transition-all duration-200 dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:border-slate-600/50"
           >
             {demoLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Play className="w-4 h-4 text-emerald-400" />
+              <Play className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             )}
             Try Demo
           </button>
@@ -434,7 +434,7 @@ export default function LoginPage() {
             <button
               id="toggle-mode-btn"
               onClick={switchMode}
-              className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+              className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors dark:text-indigo-400 dark:hover:text-indigo-300"
             >
               {mode === "login" ? "Sign up" : "Sign in"}
             </button>

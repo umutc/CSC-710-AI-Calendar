@@ -64,15 +64,15 @@ function toneClasses(tone: string) {
 function toneRing(tone: string) {
   switch (tone) {
     case "cyan":
-      return "border-cyan-400/20 hover:border-cyan-400/40";
+      return "border-cyan-500/30 hover:border-cyan-500/50 dark:border-cyan-400/20 dark:hover:border-cyan-400/40";
     case "amber":
-      return "border-amber-400/20 hover:border-amber-400/40";
+      return "border-amber-500/30 hover:border-amber-500/50 dark:border-amber-400/20 dark:hover:border-amber-400/40";
     case "emerald":
-      return "border-emerald-400/20 hover:border-emerald-400/40";
+      return "border-emerald-500/30 hover:border-emerald-500/50 dark:border-emerald-400/20 dark:hover:border-emerald-400/40";
     case "rose":
-      return "border-rose-400/20 hover:border-rose-400/40";
+      return "border-rose-500/30 hover:border-rose-500/50 dark:border-rose-400/20 dark:hover:border-rose-400/40";
     default:
-      return "border-white/10 hover:border-white/20";
+      return "border-slate-900/10 hover:border-slate-900/20 dark:border-white/10 dark:hover:border-white/20";
   }
 }
 
@@ -111,8 +111,8 @@ function AppearanceSection() {
           <Palette className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-white">Appearance</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Appearance</h2>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Choose how Dayforma looks on this device. The selection syncs to
             your profile so other devices match.
           </p>
@@ -125,8 +125,8 @@ function AppearanceSection() {
                   key={opt.value}
                   className={`flex cursor-pointer items-start gap-3 rounded-3xl border px-4 py-3 transition ${
                     checked
-                      ? "border-cyan-400/40 bg-cyan-300/10"
-                      : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                      ? "border-cyan-600/50 bg-cyan-500/10 dark:border-cyan-400/40 dark:bg-cyan-300/10"
+                      : "border-slate-900/[0.08] bg-slate-900/[0.03] hover:bg-slate-900/[0.06] dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
                   }`}
                 >
                   <input
@@ -141,18 +141,18 @@ function AppearanceSection() {
                   />
                   <opt.Icon
                     className={`mt-1 h-4 w-4 shrink-0 ${
-                      checked ? "text-cyan-200" : "text-slate-400"
+                      checked ? "text-cyan-700 dark:text-cyan-200" : "text-slate-500 dark:text-slate-400"
                     }`}
                   />
                   <div>
                     <p
                       className={`text-sm font-semibold ${
-                        checked ? "text-cyan-100" : "text-white"
+                        checked ? "text-cyan-700 dark:text-cyan-100" : "text-slate-900 dark:text-white"
                       }`}
                     >
                       {opt.label}
                     </p>
-                    <p className="text-xs text-slate-400">{opt.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{opt.description}</p>
                   </div>
                 </label>
               );
@@ -169,26 +169,26 @@ export default function SettingsPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.2),_transparent_30%),linear-gradient(180deg,_#020617_0%,_#0f172a_55%,_#111827_100%)] text-slate-100">
+    <div className="min-h-screen text-slate-900 dark:text-slate-100">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-slate-900/10 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600">
               <Calendar className="h-5 w-5 text-white" />
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700/90 dark:text-cyan-300/80">
                 Dayforma Settings
               </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-white">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
                 Settings
               </h1>
             </div>
           </div>
 
           <button
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
             onClick={() => navigate("/dashboard")}
             type="button"
           >
@@ -209,10 +209,10 @@ export default function SettingsPage() {
               {(profile?.display_name ?? user?.email ?? "U").charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
                 {profile?.display_name ?? "User"}
               </h2>
-              <p className="text-sm text-slate-400">{user?.email ?? "—"}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{user?.email ?? "—"}</p>
             </div>
           </div>
         </div>
@@ -224,7 +224,7 @@ export default function SettingsPage() {
             return (
               <article
                 key={section.id}
-                className={`group cursor-pointer rounded-3xl border bg-white/[0.03] p-5 transition hover:bg-white/[0.06] ${toneRing(section.tone)}`}
+                className={`group cursor-pointer rounded-3xl border bg-slate-900/[0.03] p-5 transition hover:bg-slate-900/[0.06] dark:bg-white/[0.03] dark:hover:bg-white/[0.06] ${toneRing(section.tone)}`}
               >
                 <div className="flex items-start gap-4">
                   <div
@@ -233,10 +233,10 @@ export default function SettingsPage() {
                     <Icon className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                       {section.title}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                       {section.description}
                     </p>
                   </div>
@@ -247,12 +247,12 @@ export default function SettingsPage() {
         </div>
 
         {/* Placeholder note */}
-        <div className="mt-8 rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-5">
-          <p className="text-sm font-semibold text-white">Coming soon</p>
-          <p className="mt-2 text-sm text-slate-300">
+        <div className="mt-8 rounded-3xl border border-dashed border-slate-900/15 bg-slate-900/[0.03] p-5 dark:border-white/15 dark:bg-white/[0.03]">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Coming soon</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Individual settings panels will be wired up in upcoming sprints.
             This page serves as the routing scaffold for{" "}
-            <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-cyan-200">
+            <code className="rounded bg-slate-900/10 px-1.5 py-0.5 text-xs text-cyan-700 dark:bg-white/10 dark:text-cyan-200">
               /settings
             </code>.
           </p>
