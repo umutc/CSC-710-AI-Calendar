@@ -1,21 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { Calendar, LogOut, Settings } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
+import type { Priority, Todo } from "../types";
 
 type AgendaEvent = {
   title: string;
   time: string;
   category: string;
   tone: string;
-};
-
-type TodoItem = {
-  title: string;
-  due: string;
-  priority: string;
-  done?: boolean;
 };
 
 const agenda: AgendaEvent[] = [
@@ -25,12 +21,32 @@ const agenda: AgendaEvent[] = [
   { title: "Evening study block", time: "19:00", category: "Focus", tone: "emerald" },
 ];
 
-const todos: TodoItem[] = [
-  { title: "Connect dashboard cards to live Supabase queries", due: "Today", priority: "High" },
-  { title: "Refine drag target states for event drop", due: "Tomorrow", priority: "Medium" },
-  { title: "Add empty state illustration for no todos", due: "Fri", priority: "Low", done: true },
-  { title: "Write responsive drawer interaction tests", due: "Mon", priority: "High" },
-];
+function priorityClasses(priority: Priority) {
+  switch (priority) {
+    case "urgent":
+      return "bg-red-500/20 text-red-200";
+    case "high":
+      return "bg-rose-500/15 text-rose-200";
+    case "medium":
+      return "bg-amber-500/15 text-amber-200";
+    case "low":
+    default:
+      return "bg-sky-500/15 text-sky-200";
+  }
+}
+
+function priorityLabel(priority: Priority) {
+  return priority.charAt(0).toUpperCase() + priority.slice(1);
+}
+
+function formatDue(due: string | null): string {
+  if (!due) return "No due date";
+  const date = parseISO(due);
+  if (isToday(date)) return "Today";
+  if (isTomorrow(date)) return "Tomorrow";
+  if (isThisWeek(date)) return format(date, "eee");
+  return format(date, "MMM d");
+}
 
 function toneClasses(tone: string) {
   switch (tone) {
@@ -187,7 +203,63 @@ function CalendarPanel() {
   );
 }
 
+function TodoRow({ todo, onToggle }: { todo: Todo; onToggle: (id: string) => void }) {
+  const done = todo.status === "done";
+  return (
+    <article
+      className={`rounded-3xl border px-4 py-4 ${
+        done
+          ? "border-white/8 bg-white/[0.03] text-slate-400"
+          : "border-white/10 bg-slate-900/70 text-slate-100"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <button
+          aria-label={done ? "Mark as pending" : "Mark as done"}
+          className={`mt-1 h-4 w-4 shrink-0 rounded-full border transition ${
+            done
+              ? "border-emerald-300 bg-emerald-300"
+              : "border-slate-500 hover:border-emerald-300"
+          }`}
+          onClick={() => onToggle(todo.id)}
+          type="button"
+        />
+        <div className="flex-1">
+          <p className={`font-medium ${done ? "line-through" : ""}`}>{todo.title}</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full bg-white/8 px-3 py-1 text-slate-300">
+              {formatDue(todo.due_at)}
+            </span>
+            <span className={`rounded-full px-3 py-1 ${priorityClasses(todo.priority)}`}>
+              {priorityLabel(todo.priority)}
+            </span>
+            {todo.status === "scheduled" && (
+              <span className="rounded-full bg-violet-500/15 px-3 py-1 text-violet-200">
+                Scheduled
+              </span>
+            )}
+            {todo.created_by_ai && (
+              <span className="rounded-full bg-cyan-500/15 px-3 py-1 text-cyan-200">
+                AI
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function TodoPanel({ mobile = false }: { mobile?: boolean }) {
+  const { todos, loading, error, createTodo, toggleStatus } = useTodos();
+  const activeCount = todos.filter((t) => t.status !== "done").length;
+
+  async function handleNewTodo() {
+    const title = window.prompt("New todo title");
+    if (!title || !title.trim()) return;
+    await createTodo({ title: title.trim() });
+  }
+
   return (
     <section className="flex h-full flex-col">
       <div className={`panel-surface flex h-full flex-col ${mobile ? "rounded-t-[2rem] p-5" : "p-5"}`}>
@@ -200,53 +272,38 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             </p>
           </div>
           <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
-            3 active
+            {activeCount} active
           </span>
         </div>
 
         <button
           className="mt-5 rounded-3xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+          onClick={handleNewTodo}
           type="button"
         >
           + New todo
         </button>
 
         <div className="mt-5 space-y-3">
-          {todos.map((todo) => (
-            <article
-              key={todo.title}
-              className={`rounded-3xl border px-4 py-4 ${
-                todo.done
-                  ? "border-white/8 bg-white/[0.03] text-slate-400"
-                  : "border-white/10 bg-slate-900/70 text-slate-100"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`mt-1 h-4 w-4 rounded-full border ${
-                    todo.done ? "border-emerald-300 bg-emerald-300" : "border-slate-500"
-                  }`}
-                />
-                <div className="flex-1">
-                  <p className={`font-medium ${todo.done ? "line-through" : ""}`}>{todo.title}</p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-white/8 px-3 py-1 text-slate-300">{todo.due}</span>
-                    <span
-                      className={`rounded-full px-3 py-1 ${
-                        todo.priority === "High"
-                          ? "bg-rose-500/15 text-rose-200"
-                          : todo.priority === "Medium"
-                            ? "bg-amber-500/15 text-amber-200"
-                            : "bg-sky-500/15 text-sky-200"
-                      }`}
-                    >
-                      {todo.priority}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
+          {loading && (
+            <p className="rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
+              Loading todos…
+            </p>
+          )}
+          {!loading && error && (
+            <p className="rounded-3xl border border-red-400/30 bg-red-500/10 px-4 py-4 text-sm text-red-200">
+              {error}
+            </p>
+          )}
+          {!loading && !error && todos.length === 0 && (
+            <p className="rounded-3xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
+              No todos yet. Tap “+ New todo” to add one.
+            </p>
+          )}
+          {!loading &&
+            todos.map((todo) => (
+              <TodoRow key={todo.id} todo={todo} onToggle={toggleStatus} />
+            ))}
         </div>
 
         <div className="mt-5 rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-4">
