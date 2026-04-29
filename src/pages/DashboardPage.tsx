@@ -40,14 +40,14 @@ const priorityOrder: Record<Priority, number> = {
 function priorityClasses(priority: Priority) {
   switch (priority) {
     case "urgent":
-      return "bg-red-500/20 text-red-200";
+      return "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200";
     case "high":
-      return "bg-rose-500/15 text-rose-200";
+      return "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200";
     case "medium":
-      return "bg-amber-500/15 text-amber-200";
+      return "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200";
     case "low":
     default:
-      return "bg-sky-500/15 text-sky-200";
+      return "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200";
   }
 }
 
@@ -72,17 +72,17 @@ function toDateInputValue(value: string | null): string {
 function toneClasses(tone: string) {
   switch (tone) {
     case "sky":
-      return "bg-sky-500/15 text-sky-200 ring-sky-400/30";
+      return "bg-sky-100 text-sky-700 ring-sky-400/40 dark:bg-sky-500/15 dark:text-sky-200 dark:ring-sky-400/30";
     case "amber":
-      return "bg-amber-500/15 text-amber-200 ring-amber-400/30";
+      return "bg-amber-100 text-amber-800 ring-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-400/30";
     case "emerald":
-      return "bg-emerald-500/15 text-emerald-200 ring-emerald-400/30";
+      return "bg-emerald-100 text-emerald-700 ring-emerald-400/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:ring-emerald-400/30";
     case "rose":
-      return "bg-rose-500/15 text-rose-200 ring-rose-400/30";
+      return "bg-rose-100 text-rose-700 ring-rose-400/40 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-rose-400/30";
     case "violet":
-      return "bg-violet-500/15 text-violet-200 ring-violet-400/30";
+      return "bg-violet-100 text-violet-700 ring-violet-400/40 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-400/30";
     default:
-      return "bg-white/10 text-white ring-white/15";
+      return "bg-slate-900/10 text-slate-700 ring-slate-900/15 dark:bg-white/10 dark:text-white dark:ring-white/15";
   }
 }
 
@@ -98,21 +98,21 @@ function DashboardHeader({
   onOpenTodos: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-slate-900/10 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600">
             <Calendar className="h-5 w-5 text-white" />
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700/90 dark:text-cyan-300/80">
               Dayforma Dashboard
             </p>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
                 Your day, mapped and movable
               </h1>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 Welcome back, {displayName}. Calendar on the left, action queue on the right.
               </p>
             </div>
@@ -120,24 +120,24 @@ function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="hidden rounded-full border border-slate-700/50 bg-slate-800/60 px-3 py-1 text-xs text-slate-400 sm:inline-flex">
+          <span className="hidden rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1 text-xs text-slate-500 sm:inline-flex dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-400">
             Dashboard
           </span>
           <button
-            className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/10 sm:inline-flex"
+            className="hidden rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/[0.08] sm:inline-flex dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
             type="button"
           >
             Week view
           </button>
           <button
-            className="inline-flex rounded-full bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 lg:hidden"
+            className="inline-flex rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600 lg:hidden dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
             onClick={onOpenTodos}
             type="button"
           >
             Open todos
           </button>
           <button
-            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/60 hover:text-cyan-300"
+            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-cyan-700 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-cyan-300"
             onClick={onOpenSettings}
             title="Settings"
             type="button"
@@ -146,7 +146,7 @@ function DashboardHeader({
           </button>
           <ThemeToggle />
           <button
-            className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/60 hover:text-red-400"
+            className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-red-400"
             onClick={onLogout}
             title="Sign out"
             type="button"
@@ -170,11 +170,11 @@ function CalendarPanel() {
         <section className="panel-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Today</p>
-              <h3 className="mt-2 text-xl font-semibold text-white">Agenda snapshots</h3>
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Today</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Agenda snapshots</h3>
             </div>
             <button
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+              className="rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
               type="button"
             >
               Add event
@@ -185,12 +185,12 @@ function CalendarPanel() {
             {agenda.map((item) => (
               <div
                 key={`${item.time}-${item.title}`}
-                className="flex items-center gap-4 rounded-3xl border border-white/8 bg-white/[0.03] px-4 py-4"
+                className="flex items-center gap-4 rounded-3xl border border-slate-900/[0.08] bg-slate-900/[0.03] px-4 py-4 dark:border-white/[0.08] dark:bg-white/[0.03]"
               >
-                <div className="w-16 shrink-0 text-sm font-semibold text-slate-200">{item.time}</div>
+                <div className="w-16 shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-200">{item.time}</div>
                 <div className="flex-1">
-                  <p className="font-medium text-white">{item.title}</p>
-                  <p className="text-sm text-slate-400">{item.category}</p>
+                  <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{item.category}</p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs ring-1 ${toneClasses(item.tone)}`}>
                   {item.category}
@@ -201,19 +201,19 @@ function CalendarPanel() {
         </section>
 
         <section className="panel-surface p-5">
-          <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Insights</p>
-          <h3 className="mt-2 text-xl font-semibold text-white">AI scheduling lane</h3>
+          <p className="text-sm uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Insights</p>
+          <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">AI scheduling lane</h3>
           <div className="mt-5 space-y-4">
-            <div className="rounded-3xl border border-cyan-400/20 bg-cyan-300/10 p-4 text-slate-100">
-              <p className="text-sm font-semibold text-cyan-100">Best focus block</p>
+            <div className="rounded-3xl border border-cyan-600/30 bg-cyan-500/10 p-4 text-slate-800 dark:border-cyan-400/20 dark:bg-cyan-300/10 dark:text-slate-100">
+              <p className="text-sm font-semibold text-cyan-700 dark:text-cyan-100">Best focus block</p>
               <p className="mt-2 text-2xl font-semibold">3:30 PM - 5:00 PM</p>
-              <p className="mt-2 text-sm text-cyan-50/80">
+              <p className="mt-2 text-sm text-cyan-700/80 dark:text-cyan-50/80">
                 Wide open after your team sync, before evening errands start.
               </p>
             </div>
-            <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-4">
-              <p className="text-sm font-semibold text-white">Collision watch</p>
-              <p className="mt-2 text-sm text-slate-300">
+            <div className="rounded-3xl border border-slate-900/[0.08] bg-slate-900/[0.03] p-4 dark:border-white/[0.08] dark:bg-white/[0.03]">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Collision watch</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                 Two unscheduled todos still need time on Friday. The drawer layout leaves room for a
                 future smart recommendations feed.
               </p>
@@ -254,8 +254,8 @@ function TodoRow({
     <article
       className={`rounded-3xl border px-4 py-4 ${
         done
-          ? "border-white/8 bg-white/[0.03] text-slate-400"
-          : "border-white/10 bg-slate-900/70 text-slate-100"
+          ? "border-slate-900/[0.08] bg-slate-900/[0.03] text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400"
+          : "border-slate-900/10 bg-white/95 text-slate-900 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100"
       }`}
     >
       <div className="flex items-start gap-3">
@@ -263,10 +263,10 @@ function TodoRow({
           aria-label={done ? "Mark as pending" : "Mark as done"}
           className={`mt-1 h-5 w-5 shrink-0 rounded-full border transition ${
             done
-              ? "border-emerald-300 bg-emerald-300 text-slate-950"
+              ? "border-emerald-500 bg-emerald-500 text-white dark:border-emerald-300 dark:bg-emerald-300 dark:text-slate-950"
               : todo.status === "scheduled"
-                ? "border-violet-300/60 bg-violet-500/15 text-violet-200 hover:border-emerald-300"
-                : "border-slate-500 text-transparent hover:border-emerald-300"
+                ? "border-violet-500/60 bg-violet-100 text-violet-700 hover:border-emerald-500 dark:border-violet-300/60 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:border-emerald-300"
+                : "border-slate-400 text-transparent hover:border-emerald-500 dark:border-slate-500 dark:hover:border-emerald-300"
           }`}
           onClick={() => onToggle(todo.id)}
           type="button"
@@ -279,7 +279,7 @@ function TodoRow({
             <div className="space-y-3">
               <input
                 autoFocus
-                className="w-full rounded-2xl border border-cyan-400/30 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none ring-0 transition focus:border-cyan-300"
+                className="w-full rounded-2xl border border-cyan-600/40 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 transition focus:border-cyan-700 dark:border-cyan-400/30 dark:bg-slate-950/70 dark:text-white dark:focus:border-cyan-300"
                 onChange={(event) => onDraftChange({ title: event.target.value })}
                 onKeyDown={onEditKeyDown}
                 placeholder="Todo title"
@@ -287,14 +287,14 @@ function TodoRow({
               />
               <div className="grid gap-2 sm:grid-cols-2">
                 <input
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyan-300"
+                  className="rounded-2xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
                   onChange={(event) => onDraftChange({ due_at: event.target.value })}
                   onKeyDown={onEditKeyDown}
                   type="date"
                   value={draft.due_at}
                 />
                 <select
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-cyan-300"
+                  className="rounded-2xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
                   onChange={(event) => onDraftChange({ priority: event.target.value as Priority })}
                   onKeyDown={onEditKeyDown}
                   value={draft.priority}
@@ -307,14 +307,14 @@ function TodoRow({
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
-                  className="rounded-full bg-cyan-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200"
+                  className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-700 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
                   onClick={onSave}
                   type="button"
                 >
                   Save
                 </button>
                 <button
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+                  className="rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                   onClick={onCancel}
                   type="button"
                 >
@@ -326,8 +326,8 @@ function TodoRow({
             <>
               <div className="flex items-start justify-between gap-3">
                 <button
-                  className={`text-left font-medium transition hover:text-cyan-200 ${
-                    done ? "line-through text-slate-400" : "text-white"
+                  className={`text-left font-medium transition hover:text-cyan-700 dark:hover:text-cyan-200 ${
+                    done ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-white"
                   }`}
                   onClick={() => onEditStart(todo)}
                   type="button"
@@ -336,7 +336,7 @@ function TodoRow({
                 </button>
                 <div className="flex items-center gap-1">
                   <button
-                    className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-cyan-200"
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-cyan-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-cyan-200"
                     onClick={() => onEditStart(todo)}
                     title="Edit todo"
                     type="button"
@@ -344,7 +344,7 @@ function TodoRow({
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-red-300"
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-red-600 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-red-300"
                     onClick={() => onDelete(todo.id)}
                     title="Delete todo"
                     type="button"
@@ -354,19 +354,19 @@ function TodoRow({
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full bg-white/8 px-3 py-1 text-slate-300">
+                <span className="rounded-full bg-slate-900/[0.06] px-3 py-1 text-slate-700 dark:bg-white/[0.08] dark:text-slate-300">
                   {formatDue(todo.due_at)}
                 </span>
                 <span className={`rounded-full px-3 py-1 ${priorityClasses(todo.priority)}`}>
                   {priorityLabel(todo.priority)}
                 </span>
                 {todo.status === "scheduled" && (
-                  <span className="rounded-full bg-violet-500/15 px-3 py-1 text-violet-200">
+                  <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">
                     Scheduled
                   </span>
                 )}
                 {todo.created_by_ai && (
-                  <span className="rounded-full bg-cyan-500/15 px-3 py-1 text-cyan-200">
+                  <span className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">
                     AI
                   </span>
                 )}
@@ -491,31 +491,31 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
       <div className={`panel-surface flex h-full flex-col ${mobile ? "rounded-t-[2rem] p-5" : "p-5"}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Tasks</p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">Todo panel</h2>
-            <p className="mt-2 text-sm text-slate-300">
+            <p className="text-sm uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Tasks</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Todo panel</h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               Create, reorder, update, and clear tasks without leaving the dashboard.
             </p>
           </div>
-          <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+          <span className="rounded-full border border-emerald-600/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
             {activeCount} active
           </span>
         </div>
 
         <form
-          className="mt-5 rounded-3xl border border-white/10 bg-white/[0.03] p-4"
+          className="mt-5 rounded-3xl border border-slate-900/[0.08] bg-slate-900/[0.03] p-4 dark:border-white/[0.08] dark:bg-white/[0.03]"
           onSubmit={handleCreateSubmit}
         >
           <div className="grid gap-3">
             <input
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-white/20 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+              className="w-full rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
               onChange={(event) => setNewTitle(event.target.value)}
               placeholder="Add a todo title"
               value={newTitle}
             />
             <div className="grid gap-3 sm:grid-cols-3">
               <select
-                className="w-full cursor-pointer rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition hover:border-white/20 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                className="w-full cursor-pointer rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
                 onChange={(event) => setNewPriority(event.target.value as Priority)}
                 value={newPriority}
               >
@@ -525,13 +525,13 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
                 <option value="low">Low</option>
               </select>
               <input
-                className="w-full cursor-pointer rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition hover:border-white/20 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                className="w-full cursor-pointer rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
                 onChange={(event) => setNewDueAt(event.target.value)}
                 type="date"
                 value={newDueAt}
               />
               <button
-                className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                className="w-full rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200 dark:focus:ring-cyan-300/30"
                 type="submit"
               >
                 Add todo
@@ -548,8 +548,8 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             <button
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                 sortMode === "priority"
-                  ? "bg-cyan-300 text-slate-950"
-                  : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                  ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
+                  : "border border-slate-900/10 bg-slate-900/[0.04] text-slate-700 hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
               }`}
               onClick={() => setSortMode("priority")}
               type="button"
@@ -559,8 +559,8 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             <button
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                 sortMode === "due"
-                  ? "bg-cyan-300 text-slate-950"
-                  : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                  ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
+                  : "border border-slate-900/10 bg-slate-900/[0.04] text-slate-700 hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
               }`}
               onClick={() => setSortMode("due")}
               type="button"
@@ -572,17 +572,17 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
 
         <div className="mt-5 space-y-3">
           {loading && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
+            <p className="rounded-3xl border border-slate-900/[0.08] bg-slate-900/[0.03] px-4 py-6 text-center text-sm text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400">
               Loading todos…
             </p>
           )}
           {!loading && error && (
-            <p className="rounded-3xl border border-red-400/30 bg-red-500/10 px-4 py-4 text-sm text-red-200">
+            <p className="rounded-3xl border border-red-500/30 bg-red-500/10 px-4 py-4 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200">
               {error}
             </p>
           )}
           {!loading && !error && sortedTodos.length === 0 && (
-            <p className="rounded-3xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
+            <p className="rounded-3xl border border-dashed border-slate-900/15 bg-slate-900/[0.03] px-4 py-6 text-center text-sm text-slate-500 dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-400">
               No todos yet. Use the form above to add your first task.
             </p>
           )}
@@ -605,9 +605,9 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             ))}
         </div>
 
-        <div className="mt-5 rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-4">
-          <p className="text-sm font-semibold text-white">Inline workflow</p>
-          <p className="mt-2 text-sm text-slate-300">
+        <div className="mt-5 rounded-3xl border border-dashed border-slate-900/15 bg-slate-900/[0.03] p-4 dark:border-white/15 dark:bg-white/[0.03]">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Inline workflow</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Click the status dot for one-tap completion, click a title or pencil to edit inline,
             and use the sort pills to reprioritize the queue instantly.
           </p>
@@ -628,7 +628,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.2),_transparent_30%),linear-gradient(180deg,_#020617_0%,_#0f172a_55%,_#111827_100%)] text-slate-100">
+    <div className="min-h-screen text-slate-900 dark:text-slate-100">
       <DashboardHeader
         displayName={profile?.display_name ?? user?.email ?? "there"}
         onLogout={handleLogout}
@@ -648,11 +648,11 @@ export default function DashboardPage() {
           <div className="panel-surface p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Mobile</p>
-                <h2 className="mt-2 text-lg font-semibold text-white">Stacked dashboard flow</h2>
+                <p className="text-sm uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Mobile</p>
+                <h2 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Stacked dashboard flow</h2>
               </div>
               <button
-                className="rounded-full bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950"
+                className="rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white dark:bg-cyan-300 dark:text-slate-950"
                 onClick={() => setMobileDrawerOpen(true)}
                 type="button"
               >
@@ -664,7 +664,7 @@ export default function DashboardPage() {
       </main>
 
       <div
-        className={`fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm transition lg:hidden ${
+        className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm transition lg:hidden dark:bg-slate-950/70 ${
           mobileDrawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={() => setMobileDrawerOpen(false)}
@@ -679,7 +679,7 @@ export default function DashboardPage() {
           <div className="mb-2 flex justify-center">
             <button
               aria-label="Close todo drawer"
-              className="h-1.5 w-16 rounded-full bg-white/30"
+              className="h-1.5 w-16 rounded-full bg-slate-900/20 dark:bg-white/30"
               onClick={() => setMobileDrawerOpen(false)}
               type="button"
             />
