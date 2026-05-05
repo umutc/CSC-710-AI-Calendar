@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { EventProvider } from "./contexts/EventContext";
 import { TodoProvider } from "./contexts/TodoContext";
 import { useTheme } from "./hooks/useTheme";
 import DashboardPage from "./pages/DashboardPage";
@@ -27,29 +28,31 @@ export default function App() {
     <BrowserRouter basename="/CSC-710-AI-Calendar/">
       <AuthProvider>
         <ThemeProvider>
-          <TodoProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-            <ThemedToaster />
-          </TodoProvider>
+          <EventProvider>
+            <TodoProvider>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+              <ThemedToaster />
+            </TodoProvider>
+          </EventProvider>
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
