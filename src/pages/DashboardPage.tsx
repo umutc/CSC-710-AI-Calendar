@@ -1,26 +1,21 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
-import { Calendar, Check, LogOut, Pencil, Settings, Trash2 } from "lucide-react";
-import type { EventInput } from "@fullcalendar/core";
+import { Calendar, Check, LogOut, Pencil, Settings, Trash2, X } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { useTodos } from "../hooks/useTodos";
 import { useEvents } from "../hooks/useEvents";
-import { useCategories } from "../hooks/useCategories";
+import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
 import EventModal from "../components/calendar/EventModal";
 import ThemeToggle from "../components/common/ThemeToggle";
 import type { EventFormValues } from "../lib/schemas/event";
-import type { Category, Event as DayformaEvent, Priority, Todo } from "../types";
+import type { Event, Priority, RRulePreset, Todo } from "../types";
 
-type ModalState =
+type EditModalState =
   | { mode: "closed" }
-  | { mode: "create"; initialValues: Partial<EventFormValues> }
   | { mode: "edit"; eventId: string; initialValues: Partial<EventFormValues> };
 
-const DEFAULT_EVENT_COLOR = "#6366f1";
-
-function eventToFormValues(ev: DayformaEvent): Partial<EventFormValues> {
+function eventToFormValues(ev: Event): Partial<EventFormValues> {
   const start = parseISO(ev.start_at);
   const end = parseISO(ev.end_at);
   if (ev.all_day) {
@@ -45,38 +40,6 @@ function eventToFormValues(ev: DayformaEvent): Partial<EventFormValues> {
   };
 }
 
-function dateToCreateDefaults(date: Date, allDay: boolean): Partial<EventFormValues> {
-  if (allDay) {
-    const ymd = format(date, "yyyy-MM-dd");
-    return { all_day: true, start_local: ymd, end_local: ymd };
-  }
-  const start = format(date, "yyyy-MM-dd'T'HH:mm");
-  const endDate = new Date(date.getTime() + 60 * 60 * 1000);
-  const end = format(endDate, "yyyy-MM-dd'T'HH:mm");
-  return { all_day: false, start_local: start, end_local: end };
-}
-
-function eventsToInputs(
-  events: DayformaEvent[],
-  categoriesById: Map<string, Category>
-): EventInput[] {
-  return events.map((ev) => {
-    const color = ev.category_id
-      ? categoriesById.get(ev.category_id)?.color ?? DEFAULT_EVENT_COLOR
-      : DEFAULT_EVENT_COLOR;
-    return {
-      id: ev.id,
-      title: ev.title,
-      start: ev.start_at,
-      end: ev.end_at,
-      allDay: ev.all_day,
-      backgroundColor: color,
-      borderColor: color,
-      textColor: "#ffffff",
-    };
-  });
-}
-
 type AgendaEvent = {
   title: string;
   time: string;
@@ -92,6 +55,17 @@ type TodoDraft = {
   priority: Priority;
 };
 
+type EventFormState = {
+  title: string;
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  allDay: boolean;
+  recurrence: "none" | "daily" | "weekday" | "weekly" | "biweekly" | "monthly";
+  weekdays: number[];
+};
+
 const agenda: AgendaEvent[] = [
   { title: "Daily standup", time: "09:00", category: "Team", tone: "sky" },
   { title: "Calendar drop UX pass", time: "11:00", category: "Design", tone: "rose" },
@@ -105,6 +79,16 @@ const priorityOrder: Record<Priority, number> = {
   medium: 2,
   low: 3,
 };
+
+const weekdayOptions = [
+  { label: "Sun", value: 0 },
+  { label: "Mon", value: 1 },
+  { label: "Tue", value: 2 },
+  { label: "Wed", value: 3 },
+  { label: "Thu", value: 4 },
+  { label: "Fri", value: 5 },
+  { label: "Sat", value: 6 },
+];
 
 function priorityClasses(priority: Priority) {
   switch (priority) {
@@ -152,6 +136,55 @@ function toneClasses(tone: string) {
       return "bg-violet-100 text-violet-700 ring-violet-400/40 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-400/30";
     default:
       return "bg-slate-900/10 text-slate-700 ring-slate-900/15 dark:bg-white/10 dark:text-white dark:ring-white/15";
+  }
+}
+
+function toDateTime(date: string, time: string): string {
+  return `${date}T${time}:00`;
+}
+
+function getDefaultEventFormState(): EventFormState {
+  const now = new Date();
+  const startHour = `${String(Math.max(now.getHours() + 1, 9)).padStart(2, "0")}:00`;
+  const endHour = `${String(Math.max(now.getHours() + 2, 10)).padStart(2, "0")}:00`;
+  const isoDate = now.toISOString().slice(0, 10);
+
+  return {
+    title: "",
+    startDate: isoDate,
+    startTime: startHour,
+    endDate: isoDate,
+    endTime: endHour,
+    allDay: false,
+    recurrence: "none",
+    weekdays: [new Date(`${isoDate}T00:00:00`).getDay()],
+  };
+}
+
+function buildRRule(form: EventFormState): RRulePreset | null {
+  switch (form.recurrence) {
+    case "daily":
+      return { preset: "daily" };
+    case "weekday":
+      return { preset: "weekday" };
+    case "weekly":
+      return {
+        preset: "weekly",
+        weekdays: form.weekdays.length > 0 ? form.weekdays : [new Date(`${form.startDate}T00:00:00`).getDay()],
+      };
+    case "biweekly":
+      return {
+        preset: "biweekly",
+        weekdays: form.weekdays.length > 0 ? form.weekdays : [new Date(`${form.startDate}T00:00:00`).getDay()],
+      };
+    case "monthly":
+      return {
+        preset: "monthly",
+        day_of_month: new Date(`${form.startDate}T00:00:00`).getDate(),
+      };
+    case "none":
+    default:
+      return null;
   }
 }
 
@@ -228,19 +261,195 @@ function DashboardHeader({
   );
 }
 
+function EventComposer({
+  open,
+  form,
+  loading,
+  onClose,
+  onChange,
+  onToggleWeekday,
+  onSubmit,
+}: {
+  open: boolean;
+  form: EventFormState;
+  loading: boolean;
+  onClose: () => void;
+  onChange: (patch: Partial<EventFormState>) => void;
+  onToggleWeekday: (weekday: number) => void;
+  onSubmit: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-x-0 top-10 z-50 mx-auto w-[min(92vw,40rem)]">
+        <div className="panel-surface p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Add Event</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Create recurring event</h2>
+              <p className="mt-2 text-sm text-slate-300">
+                Examples: work Mon-Fri from 9AM-5PM, dance practice every Wednesday 6PM-7PM.
+              </p>
+            </div>
+            <button
+              className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
+              onClick={onClose}
+              type="button"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-4">
+            <input
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+              onChange={(event) => onChange({ title: event.target.value })}
+              placeholder="Event title"
+              value={form.title}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-2 text-sm text-slate-300">
+                <span>Start date</span>
+                <input
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  onChange={(event) => onChange({ startDate: event.target.value })}
+                  type="date"
+                  value={form.startDate}
+                />
+              </label>
+              <label className="grid gap-2 text-sm text-slate-300">
+                <span>End date</span>
+                <input
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  onChange={(event) => onChange({ endDate: event.target.value })}
+                  type="date"
+                  value={form.endDate}
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-2 text-sm text-slate-300">
+                <span>Start time</span>
+                <input
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  disabled={form.allDay}
+                  onChange={(event) => onChange({ startTime: event.target.value })}
+                  type="time"
+                  value={form.startTime}
+                />
+              </label>
+              <label className="grid gap-2 text-sm text-slate-300">
+                <span>End time</span>
+                <input
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  disabled={form.allDay}
+                  onChange={(event) => onChange({ endTime: event.target.value })}
+                  type="time"
+                  value={form.endTime}
+                />
+              </label>
+            </div>
+
+            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-200">
+              <input
+                checked={form.allDay}
+                className="h-4 w-4 accent-cyan-300"
+                onChange={(event) => onChange({ allDay: event.target.checked })}
+                type="checkbox"
+              />
+              All-day event
+            </label>
+
+            <label className="grid gap-2 text-sm text-slate-300">
+              <span>Repeat</span>
+              <select
+                className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                onChange={(event) =>
+                  onChange({ recurrence: event.target.value as EventFormState["recurrence"] })
+                }
+                value={form.recurrence}
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekday">Every weekday (Mon-Fri)</option>
+                <option value="weekly">Weekly on selected days</option>
+                <option value="biweekly">Every other week (biweekly)</option>
+                <option value="monthly">Monthly on start date day</option>
+              </select>
+            </label>
+
+            {(form.recurrence === "weekly" || form.recurrence === "biweekly") && (
+              <div className="grid gap-2">
+                <p className="text-sm text-slate-300">Weekdays</p>
+                <div className="flex flex-wrap gap-2">
+                  {weekdayOptions.map((day) => {
+                    const active = form.weekdays.includes(day.value);
+                    return (
+                      <button
+                        key={day.value}
+                        className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                          active
+                            ? "bg-cyan-300 text-slate-950"
+                            : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                        }`}
+                        onClick={() => onToggleWeekday(day.value)}
+                        type="button"
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+              {form.recurrence === "weekday" && "This event will repeat Monday through Friday."}
+              {form.recurrence === "biweekly" && "This event will repeat every other week on the selected days."}
+              {form.recurrence === "monthly" &&
+                `This event will repeat on day ${new Date(`${form.startDate}T00:00:00`).getDate()} of each month.`}
+              {form.recurrence === "weekly" &&
+                "This event will repeat on the selected weekdays using the same time window."}
+              {form.recurrence === "daily" && "This event will repeat every day using the same time window."}
+              {form.recurrence === "none" && "This will create a one-time event."}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+                onClick={onClose}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-full bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loading}
+                onClick={onSubmit}
+                type="button"
+              >
+                {loading ? "Creating..." : "Create event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 interface CalendarPanelProps {
-  events: EventInput[];
+  events: Event[];
   onDateClick: (date: Date, allDay: boolean) => void;
   onEventClick: (id: string) => void;
   onAddEvent: () => void;
 }
 
-function CalendarPanel({
-  events,
-  onDateClick,
-  onEventClick,
-  onAddEvent,
-}: CalendarPanelProps) {
+function CalendarPanel({ events, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
@@ -467,10 +676,16 @@ function TodoRow({
 
 function TodoPanel({ mobile = false }: { mobile?: boolean }) {
   const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
+  const { createEvent } = useEvents();
   const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("medium");
   const [newDueAt, setNewDueAt] = useState("");
+  const [newRecurring, setNewRecurring] = useState(false);
+  const [newEventStartTime, setNewEventStartTime] = useState("09:00");
+  const [newEventEndTime, setNewEventEndTime] = useState("10:00");
+  const [newEventRecurrence, setNewEventRecurrence] = useState<EventFormState["recurrence"]>("weekly");
+  const [newEventWeekdays, setNewEventWeekdays] = useState<number[]>([]);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TodoDraft | null>(null);
 
@@ -507,15 +722,47 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
     const trimmedTitle = newTitle.trim();
     if (!trimmedTitle) return;
 
+    let linkedEventId: string | null = null;
+
+    if (newRecurring) {
+      const baseDate = newDueAt || new Date().toISOString().slice(0, 10);
+      linkedEventId = await createEvent({
+        title: trimmedTitle,
+        start_at: `${baseDate}T${newEventStartTime}:00`,
+        end_at: `${baseDate}T${newEventEndTime}:00`,
+        all_day: false,
+        rrule: buildRRule({
+          title: trimmedTitle,
+          startDate: baseDate,
+          startTime: newEventStartTime,
+          endDate: baseDate,
+          endTime: newEventEndTime,
+          allDay: false,
+          recurrence: newEventRecurrence,
+          weekdays:
+            newEventWeekdays.length > 0
+              ? newEventWeekdays
+              : [new Date(`${baseDate}T00:00:00`).getDay()],
+        }),
+      });
+    }
+
     await createTodo({
       title: trimmedTitle,
       priority: newPriority,
       due_at: newDueAt || null,
+      linked_event_id: linkedEventId,
+      status: linkedEventId ? "scheduled" : undefined,
     });
 
     setNewTitle("");
     setNewPriority("medium");
     setNewDueAt("");
+    setNewRecurring(false);
+    setNewEventStartTime("09:00");
+    setNewEventEndTime("10:00");
+    setNewEventRecurrence("weekly");
+    setNewEventWeekdays([]);
   }
 
   async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -623,6 +870,86 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
                 Add todo
               </button>
             </div>
+
+            <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-slate-700 dark:text-slate-200">
+              <input
+                checked={newRecurring}
+                className="h-4 w-4 accent-cyan-600 dark:accent-cyan-300"
+                onChange={(event) => setNewRecurring(event.target.checked)}
+                type="checkbox"
+              />
+              Schedule as recurring calendar event
+            </label>
+
+            {newRecurring && (
+              <div className="space-y-3 rounded-2xl border border-slate-900/10 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-950/50">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="grid gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Start time</span>
+                    <input
+                      className="rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                      onChange={(event) => setNewEventStartTime(event.target.value)}
+                      type="time"
+                      value={newEventStartTime}
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">End time</span>
+                    <input
+                      className="rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                      onChange={(event) => setNewEventEndTime(event.target.value)}
+                      type="time"
+                      value={newEventEndTime}
+                    />
+                  </label>
+                </div>
+                <select
+                  className="w-full rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                  onChange={(event) =>
+                    setNewEventRecurrence(event.target.value as EventFormState["recurrence"])
+                  }
+                  value={newEventRecurrence}
+                >
+                  <option value="daily">Every day</option>
+                  <option value="weekday">Every weekday (Mon–Fri)</option>
+                  <option value="weekly">Weekly on selected days</option>
+                  <option value="biweekly">Every other week (biweekly)</option>
+                  <option value="monthly">Monthly on due date day</option>
+                </select>
+                {(newEventRecurrence === "weekly" || newEventRecurrence === "biweekly") && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {weekdayOptions.map((day) => {
+                      const active = newEventWeekdays.includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                            active
+                              ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
+                              : "border border-slate-900/10 bg-white text-slate-600 hover:bg-slate-900/[0.06] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-white/10"
+                          }`}
+                          onClick={() =>
+                            setNewEventWeekdays((prev) =>
+                              active
+                                ? prev.filter((v) => v !== day.value)
+                                : [...prev, day.value].sort((a, b) => a - b)
+                            )
+                          }
+                          type="button"
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {!newDueAt && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Tip: set a due date above to anchor the event's start date.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </form>
 
@@ -705,53 +1032,94 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
 
 export default function DashboardPage() {
   const { user, profile, signOut } = useAuth();
+  const { events, createEvent } = useEvents();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [modalState, setModalState] = useState<ModalState>({ mode: "closed" });
+  const [eventComposerOpen, setEventComposerOpen] = useState(false);
+  const [eventSubmitting, setEventSubmitting] = useState(false);
+  const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
+  const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
 
-  const { events } = useEvents();
-  const { categories } = useCategories();
+  const visibleEvents = useMemo(() => events, [events]);
 
-  const categoriesById = useMemo(() => {
-    const map = new Map<string, Category>();
-    categories.forEach((c) => map.set(c.id, c));
-    return map;
-  }, [categories]);
-
-  const calendarEvents = useMemo(
-    () => eventsToInputs(events, categoriesById),
-    [events, categoriesById]
-  );
-
-  const handleDateClick = (date: Date, allDay: boolean) => {
-    setModalState({
-      mode: "create",
-      initialValues: dateToCreateDefaults(date, allDay),
+  function openComposerForDate(date: Date, allDay: boolean) {
+    const ymd = format(date, "yyyy-MM-dd");
+    const startTime = allDay ? "09:00" : format(date, "HH:mm");
+    const endDate = new Date(date.getTime() + 60 * 60 * 1000);
+    const endTime = allDay ? "10:00" : format(endDate, "HH:mm");
+    setEventForm({
+      title: "",
+      startDate: ymd,
+      startTime,
+      endDate: ymd,
+      endTime,
+      allDay,
+      recurrence: "none",
+      weekdays: [date.getDay()],
     });
-  };
+    setEventComposerOpen(true);
+  }
 
-  const handleEventClick = (id: string) => {
+  function handleAddEvent() {
+    setEventForm(getDefaultEventFormState());
+    setEventComposerOpen(true);
+  }
+
+  function handleEventClick(id: string) {
     const ev = events.find((e) => e.id === id);
     if (!ev) return;
-    setModalState({
+    setEditModalState({
       mode: "edit",
       eventId: id,
       initialValues: eventToFormValues(ev),
     });
-  };
+  }
 
-  const handleAddEvent = () => {
-    setModalState({
-      mode: "create",
-      initialValues: dateToCreateDefaults(new Date(), false),
-    });
-  };
-
-  const closeModal = () => setModalState({ mode: "closed" });
+  function closeEditModal() {
+    setEditModalState({ mode: "closed" });
+  }
 
   async function handleLogout() {
     await signOut();
     navigate("/", { replace: true });
+  }
+
+  function resetEventComposer() {
+    setEventForm(getDefaultEventFormState());
+    setEventComposerOpen(false);
+    setEventSubmitting(false);
+  }
+
+  function handleToggleWeekday(weekday: number) {
+    setEventForm((current) => ({
+      ...current,
+      weekdays: current.weekdays.includes(weekday)
+        ? current.weekdays.filter((value) => value !== weekday)
+        : [...current.weekdays, weekday].sort((a, b) => a - b),
+    }));
+  }
+
+  async function handleCreateEvent() {
+    if (!eventForm.title.trim()) return;
+
+    setEventSubmitting(true);
+
+    const startAt = eventForm.allDay
+      ? `${eventForm.startDate}T00:00:00`
+      : toDateTime(eventForm.startDate, eventForm.startTime);
+    const endAt = eventForm.allDay
+      ? `${eventForm.endDate}T23:59:00`
+      : toDateTime(eventForm.endDate, eventForm.endTime);
+
+    await createEvent({
+      title: eventForm.title.trim(),
+      start_at: startAt,
+      end_at: endAt,
+      all_day: eventForm.allDay,
+      rrule: buildRRule(eventForm),
+    });
+
+    resetEventComposer();
   }
 
   return (
@@ -766,8 +1134,8 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start">
           <CalendarPanel
-            events={calendarEvents}
-            onDateClick={handleDateClick}
+            events={visibleEvents}
+            onDateClick={openComposerForDate}
             onEventClick={handleEventClick}
             onAddEvent={handleAddEvent}
           />
@@ -795,6 +1163,26 @@ export default function DashboardPage() {
         </section>
       </main>
 
+      <EventComposer
+        form={eventForm}
+        loading={eventSubmitting}
+        onChange={(patch) => setEventForm((current) => ({ ...current, ...patch }))}
+        onClose={resetEventComposer}
+        onSubmit={() => void handleCreateEvent()}
+        onToggleWeekday={handleToggleWeekday}
+        open={eventComposerOpen}
+      />
+
+      <EventModal
+        open={editModalState.mode === "edit"}
+        onClose={closeEditModal}
+        mode="edit"
+        eventId={editModalState.mode === "edit" ? editModalState.eventId : undefined}
+        initialValues={
+          editModalState.mode === "edit" ? editModalState.initialValues : undefined
+        }
+      />
+
       <div
         className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm transition lg:hidden dark:bg-slate-950/70 ${
           mobileDrawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
@@ -819,16 +1207,6 @@ export default function DashboardPage() {
           <TodoPanel mobile />
         </div>
       </div>
-
-      <EventModal
-        open={modalState.mode !== "closed"}
-        onClose={closeModal}
-        mode={modalState.mode === "edit" ? "edit" : "create"}
-        eventId={modalState.mode === "edit" ? modalState.eventId : undefined}
-        initialValues={
-          modalState.mode === "closed" ? undefined : modalState.initialValues
-        }
-      />
     </div>
   );
 }

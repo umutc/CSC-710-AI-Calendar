@@ -2,8 +2,8 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
-import { EventProvider } from "./contexts/EventContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { EventProvider } from "./contexts/EventContext";
 import { TodoProvider } from "./contexts/TodoContext";
 import { useTheme } from "./hooks/useTheme";
 import DashboardPage from "./pages/DashboardPage";
@@ -28,8 +28,8 @@ export default function App() {
     <BrowserRouter basename="/CSC-710-AI-Calendar/">
       <AuthProvider>
         <ThemeProvider>
-          <TodoProvider>
-            <EventProvider>
+          <EventProvider>
+            <TodoProvider>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -51,8 +51,8 @@ export default function App() {
                 />
               </Routes>
               <ThemedToaster />
-            </EventProvider>
-          </TodoProvider>
+            </TodoProvider>
+          </EventProvider>
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

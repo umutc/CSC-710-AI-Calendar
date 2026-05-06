@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -8,11 +8,11 @@ import type { DateClickArg } from "@fullcalendar/interaction";
 import type {
   DatesSetArg,
   EventClickArg,
-  EventInput,
   EventMountArg,
 } from "@fullcalendar/core";
+import { expandRecurringEvents } from "../../lib/rruleHelpers";
+import type { Event } from "../../types";
 
-// ─── Constants ──────────────────────────────────────────────────────────────
 const STORAGE_KEY = "dayforma-calendar-view";
 
 const VALID_VIEWS = new Set([
@@ -24,7 +24,6 @@ const VALID_VIEWS = new Set([
 
 const DEFAULT_VIEW = "dayGridMonth";
 
-/** Read the persisted view from localStorage (falls back to Month). */
 function getSavedView(): string {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -35,33 +34,37 @@ function getSavedView(): string {
   return DEFAULT_VIEW;
 }
 
+const DEFAULT_VISIBLE_RANGE = {
+  start: new Date("2026-04-27T00:00:00"),
+  end: new Date("2026-06-01T00:00:00"),
+};
+
 interface CalendarViewProps {
-  events: EventInput[];
+  events: Event[];
   onDateClick?: (date: Date, allDay: boolean) => void;
   onEventClick?: (eventId: string) => void;
 }
 
-/**
- * FullCalendar multi-view wrapper with controlled view switching.
- *
- * Supports Month, Week, Day, and Agenda views. The last selected view
- * is persisted in localStorage so it survives page reloads.
- * Past events are visually dimmed via the .fc-event-past CSS class.
- */
 export default function CalendarView({
   events,
   onDateClick,
   onEventClick,
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
+  const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
+
+  const concreteEvents = useMemo(
+    () => expandRecurringEvents(events, visibleRange),
+    [events, visibleRange]
+  );
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
-    const viewType = arg.view.type;
     try {
-      localStorage.setItem(STORAGE_KEY, viewType);
+      localStorage.setItem(STORAGE_KEY, arg.view.type);
     } catch {
       /* localStorage may be unavailable */
     }
+    setVisibleRange({ start: arg.start, end: arg.end });
   }, []);
 
   const handleEventDidMount = useCallback((info: EventMountArg) => {
@@ -80,7 +83,10 @@ export default function CalendarView({
 
   const handleEventClick = useCallback(
     (arg: EventClickArg) => {
-      if (arg.event.id) onEventClick?.(arg.event.id);
+      const sourceId =
+        (arg.event.extendedProps as { sourceEventId?: string })?.sourceEventId ??
+        arg.event.id;
+      if (sourceId) onEventClick?.(sourceId);
     },
     [onEventClick]
   );
@@ -106,7 +112,7 @@ export default function CalendarView({
         eventDidMount={handleEventDidMount}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
-        events={events}
+        events={concreteEvents}
         height={720}
         editable={false}
         selectable={true}

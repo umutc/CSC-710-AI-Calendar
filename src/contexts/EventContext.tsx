@@ -80,7 +80,7 @@ export interface EventContextValue {
   events: Event[];
   loading: boolean;
   error: string | null;
-  createEvent: (input: CreateEventInput) => Promise<void>;
+  createEvent: (input: CreateEventInput) => Promise<string | null>;
   updateEvent: (id: string, patch: Partial<Event>) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
 }
@@ -156,10 +156,10 @@ export function EventProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   const createEvent = useCallback(
-    async (input: CreateEventInput) => {
+    async (input: CreateEventInput): Promise<string | null> => {
       if (!user?.id) {
         toast.error("Not signed in");
-        return;
+        return null;
       }
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
@@ -196,7 +196,9 @@ export function EventProvider({ children }: { children: ReactNode }) {
       if (error) {
         dispatch({ type: "DELETE_EVENT", payload: { id } });
         toast.error(`Failed to create event: ${error.message}`);
+        return null;
       }
+      return id;
     },
     [user?.id]
   );

@@ -46,6 +46,7 @@ export interface Todo {
 export type RRulePreset =
   | { preset: "daily" }
   | { preset: "weekly"; weekdays: number[] }
+  | { preset: "biweekly"; weekdays: number[] }
   | { preset: "monthly"; day_of_month: number }
   | { preset: "weekday" };
 
