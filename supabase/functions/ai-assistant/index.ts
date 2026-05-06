@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@^0.40.0";
 import { createClient } from "jsr:@supabase/supabase-js@^2.57.4";
+import { TOOLS } from "./tools.ts";
 
 const CLAUDE_MODEL = "claude-sonnet-4-6";
 const MAX_STORED_MESSAGES = 50;
@@ -18,25 +19,6 @@ Rules:
 - When scheduling, avoid collisions with existing events unless the user asks to overlap.
 - Prefer the user's working hours (9:00–18:00 local) unless told otherwise.
 - Always respond in English.`;
-
-const TOOLS: Anthropic.Tool[] = [
-  // Full tool schemas land in the next task (define tool schemas).
-  {
-    name: "create_event",
-    description: "Create a calendar event on the user's calendar.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        title: { type: "string" },
-        start_at: { type: "string", format: "date-time" },
-        end_at: { type: "string", format: "date-time" },
-        all_day: { type: "boolean" },
-        category_name: { type: "string" },
-      },
-      required: ["title", "start_at", "end_at"],
-    },
-  },
-];
 
 type StoredMessage = {
   role: "user" | "assistant";
