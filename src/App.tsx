@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import { EventProvider } from "./contexts/EventContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { TodoProvider } from "./contexts/TodoContext";
 import { useTheme } from "./hooks/useTheme";
@@ -28,27 +29,29 @@ export default function App() {
       <AuthProvider>
         <ThemeProvider>
           <TodoProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-            <ThemedToaster />
+            <EventProvider>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+              <ThemedToaster />
+            </EventProvider>
           </TodoProvider>
         </ThemeProvider>
       </AuthProvider>

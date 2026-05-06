@@ -2,11 +2,80 @@ import { useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { Calendar, Check, LogOut, Pencil, Settings, Trash2 } from "lucide-react";
+import type { EventInput } from "@fullcalendar/core";
 import { useAuth } from "../hooks/useAuth";
 import { useTodos } from "../hooks/useTodos";
+import { useEvents } from "../hooks/useEvents";
+import { useCategories } from "../hooks/useCategories";
 import CalendarView from "../components/calendar/CalendarView";
+import EventModal from "../components/calendar/EventModal";
 import ThemeToggle from "../components/common/ThemeToggle";
-import type { Priority, Todo } from "../types";
+import type { EventFormValues } from "../lib/schemas/event";
+import type { Category, Event as DayformaEvent, Priority, Todo } from "../types";
+
+type ModalState =
+  | { mode: "closed" }
+  | { mode: "create"; initialValues: Partial<EventFormValues> }
+  | { mode: "edit"; eventId: string; initialValues: Partial<EventFormValues> };
+
+const DEFAULT_EVENT_COLOR = "#6366f1";
+
+function eventToFormValues(ev: DayformaEvent): Partial<EventFormValues> {
+  const start = parseISO(ev.start_at);
+  const end = parseISO(ev.end_at);
+  if (ev.all_day) {
+    return {
+      title: ev.title,
+      description: ev.description,
+      all_day: true,
+      start_local: format(start, "yyyy-MM-dd"),
+      end_local: format(end, "yyyy-MM-dd"),
+      category_id: ev.category_id,
+      reminder_offset_minutes: ev.reminder_offset_minutes,
+    };
+  }
+  return {
+    title: ev.title,
+    description: ev.description,
+    all_day: false,
+    start_local: format(start, "yyyy-MM-dd'T'HH:mm"),
+    end_local: format(end, "yyyy-MM-dd'T'HH:mm"),
+    category_id: ev.category_id,
+    reminder_offset_minutes: ev.reminder_offset_minutes,
+  };
+}
+
+function dateToCreateDefaults(date: Date, allDay: boolean): Partial<EventFormValues> {
+  if (allDay) {
+    const ymd = format(date, "yyyy-MM-dd");
+    return { all_day: true, start_local: ymd, end_local: ymd };
+  }
+  const start = format(date, "yyyy-MM-dd'T'HH:mm");
+  const endDate = new Date(date.getTime() + 60 * 60 * 1000);
+  const end = format(endDate, "yyyy-MM-dd'T'HH:mm");
+  return { all_day: false, start_local: start, end_local: end };
+}
+
+function eventsToInputs(
+  events: DayformaEvent[],
+  categoriesById: Map<string, Category>
+): EventInput[] {
+  return events.map((ev) => {
+    const color = ev.category_id
+      ? categoriesById.get(ev.category_id)?.color ?? DEFAULT_EVENT_COLOR
+      : DEFAULT_EVENT_COLOR;
+    return {
+      id: ev.id,
+      title: ev.title,
+      start: ev.start_at,
+      end: ev.end_at,
+      allDay: ev.all_day,
+      backgroundColor: color,
+      borderColor: color,
+      textColor: "#ffffff",
+    };
+  });
+}
 
 type AgendaEvent = {
   title: string;
@@ -159,11 +228,27 @@ function DashboardHeader({
   );
 }
 
-function CalendarPanel() {
+interface CalendarPanelProps {
+  events: EventInput[];
+  onDateClick: (date: Date, allDay: boolean) => void;
+  onEventClick: (id: string) => void;
+  onAddEvent: () => void;
+}
+
+function CalendarPanel({
+  events,
+  onDateClick,
+  onEventClick,
+  onAddEvent,
+}: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
-        <CalendarView />
+        <CalendarView
+          events={events}
+          onDateClick={onDateClick}
+          onEventClick={onEventClick}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
@@ -175,6 +260,7 @@ function CalendarPanel() {
             </div>
             <button
               className="rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              onClick={onAddEvent}
               type="button"
             >
               Add event
@@ -621,6 +707,47 @@ export default function DashboardPage() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [modalState, setModalState] = useState<ModalState>({ mode: "closed" });
+
+  const { events } = useEvents();
+  const { categories } = useCategories();
+
+  const categoriesById = useMemo(() => {
+    const map = new Map<string, Category>();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
+
+  const calendarEvents = useMemo(
+    () => eventsToInputs(events, categoriesById),
+    [events, categoriesById]
+  );
+
+  const handleDateClick = (date: Date, allDay: boolean) => {
+    setModalState({
+      mode: "create",
+      initialValues: dateToCreateDefaults(date, allDay),
+    });
+  };
+
+  const handleEventClick = (id: string) => {
+    const ev = events.find((e) => e.id === id);
+    if (!ev) return;
+    setModalState({
+      mode: "edit",
+      eventId: id,
+      initialValues: eventToFormValues(ev),
+    });
+  };
+
+  const handleAddEvent = () => {
+    setModalState({
+      mode: "create",
+      initialValues: dateToCreateDefaults(new Date(), false),
+    });
+  };
+
+  const closeModal = () => setModalState({ mode: "closed" });
 
   async function handleLogout() {
     await signOut();
@@ -638,7 +765,12 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start">
-          <CalendarPanel />
+          <CalendarPanel
+            events={calendarEvents}
+            onDateClick={handleDateClick}
+            onEventClick={handleEventClick}
+            onAddEvent={handleAddEvent}
+          />
           <aside className="hidden lg:block">
             <TodoPanel />
           </aside>
@@ -687,6 +819,16 @@ export default function DashboardPage() {
           <TodoPanel mobile />
         </div>
       </div>
+
+      <EventModal
+        open={modalState.mode !== "closed"}
+        onClose={closeModal}
+        mode={modalState.mode === "edit" ? "edit" : "create"}
+        eventId={modalState.mode === "edit" ? modalState.eventId : undefined}
+        initialValues={
+          modalState.mode === "closed" ? undefined : modalState.initialValues
+        }
+      />
     </div>
   );
 }
