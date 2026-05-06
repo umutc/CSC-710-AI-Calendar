@@ -198,6 +198,7 @@ describe("eventToCalendarInput", () => {
     expect(result.allDay).toBe(event.all_day);
     expect(result.extendedProps).toEqual({
       sourceEventId: event.id,
+      categoryId: null,
       rrule: null,
     });
   });

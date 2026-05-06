@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { Calendar, Check, LogOut, Pencil, Settings, Trash2, X } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
 import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
@@ -463,18 +464,20 @@ function EventComposer({
 interface CalendarPanelProps {
   events: Event[];
   todoEvents?: EventInput[];
+  categoryColorMap?: Record<string, string>;
   onDateClick: (date: Date, allDay: boolean) => void;
   onEventClick: (id: string) => void;
   onAddEvent: () => void;
 }
 
-function CalendarPanel({ events, todoEvents, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
+function CalendarPanel({ events, todoEvents, categoryColorMap, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
         <CalendarView
           events={events}
           extraEvents={todoEvents}
+          categoryColorMap={categoryColorMap}
           onDateClick={onDateClick}
           onEventClick={onEventClick}
         />
@@ -1170,6 +1173,7 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
 export default function DashboardPage() {
   const { user, profile, signOut } = useAuth();
   const { events, createEvent } = useEvents();
+  const { categories } = useCategories();
   const { todos } = useTodos();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -1179,6 +1183,15 @@ export default function DashboardPage() {
   const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
 
   const visibleEvents = useMemo(() => events, [events]);
+
+  // Build a lookup map from category id → hex color for calendar rendering
+  const categoryColorMap = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    for (const cat of categories) {
+      map[cat.id] = cat.color;
+    }
+    return map;
+  }, [categories]);
 
   // Build calendar entries from todos that have a due date, colored by priority.
   // Skip todos already linked to a real calendar event (to avoid duplicates).
@@ -1297,6 +1310,7 @@ export default function DashboardPage() {
           <CalendarPanel
             events={visibleEvents}
             todoEvents={todoCalendarEvents}
+            categoryColorMap={categoryColorMap}
             onDateClick={openComposerForDate}
             onEventClick={handleEventClick}
             onAddEvent={handleAddEvent}

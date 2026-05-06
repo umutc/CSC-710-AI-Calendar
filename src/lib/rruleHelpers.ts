@@ -50,6 +50,7 @@ function buildOccurrence(event: Event, startAt: Date, endAt: Date, occurrenceInd
     allDay: event.all_day,
     extendedProps: {
       sourceEventId: event.id,
+      categoryId: event.category_id,
       rrule: event.rrule,
       occurrenceIndex,
     },
@@ -225,6 +226,7 @@ export function eventToCalendarInput(event: Event): EventInput {
     allDay: event.all_day,
     extendedProps: {
       sourceEventId: event.id,
+      categoryId: event.category_id,
       rrule: event.rrule,
     },
   };

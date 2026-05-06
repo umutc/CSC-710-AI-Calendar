@@ -43,6 +43,7 @@ const DEFAULT_VISIBLE_RANGE = {
 interface CalendarViewProps {
   events: Event[];
   extraEvents?: EventInput[];
+  categoryColorMap?: Record<string, string>;
   onDateClick?: (date: Date, allDay: boolean) => void;
   onEventClick?: (eventId: string) => void;
 }
@@ -50,6 +51,7 @@ interface CalendarViewProps {
 export default function CalendarView({
   events,
   extraEvents,
+  categoryColorMap,
   onDateClick,
   onEventClick,
 }: CalendarViewProps) {
@@ -75,7 +77,21 @@ export default function CalendarView({
     if (eventEnd && eventEnd < new Date()) {
       info.el.classList.add("fc-event-past");
     }
-  }, []);
+
+    // Apply category color if available
+    const catId = info.event.extendedProps?.categoryId as string | undefined;
+    if (catId && categoryColorMap?.[catId]) {
+      const color = categoryColorMap[catId];
+      info.el.style.backgroundColor = color;
+      info.el.style.borderColor = color;
+      // Use white text on colored backgrounds for readability
+      info.el.style.color = "#ffffff";
+      const mainEl = info.el.querySelector(".fc-event-main") as HTMLElement | null;
+      if (mainEl) mainEl.style.color = "#ffffff";
+      const titleEl = info.el.querySelector(".fc-event-title") as HTMLElement | null;
+      if (titleEl) titleEl.style.color = "#ffffff";
+    }
+  }, [categoryColorMap]);
 
   const handleDateClick = useCallback(
     (arg: DateClickArg) => {
@@ -130,3 +146,4 @@ export default function CalendarView({
     </div>
   );
 }
+
