@@ -8,6 +8,7 @@ import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
 import EventModal from "../components/calendar/EventModal";
 import ThemeToggle from "../components/common/ThemeToggle";
+import type { EventInput } from "@fullcalendar/core";
 import type { EventFormValues } from "../lib/schemas/event";
 import type { Event, Priority, RRulePreset, Todo } from "../types";
 
@@ -459,19 +460,35 @@ function EventComposer({
   );
 }
 
+function todoPriorityColor(priority: Priority): { bg: string; border: string; text: string } {
+  switch (priority) {
+    case "urgent":
+      return { bg: "#dc2626", border: "#b91c1c", text: "#ffffff" };
+    case "high":
+      return { bg: "#e11d48", border: "#be123c", text: "#ffffff" };
+    case "medium":
+      return { bg: "#d97706", border: "#b45309", text: "#ffffff" };
+    case "low":
+    default:
+      return { bg: "#0284c7", border: "#0369a1", text: "#ffffff" };
+  }
+}
+
 interface CalendarPanelProps {
   events: Event[];
+  todoEvents?: EventInput[];
   onDateClick: (date: Date, allDay: boolean) => void;
   onEventClick: (id: string) => void;
   onAddEvent: () => void;
 }
 
-function CalendarPanel({ events, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
+function CalendarPanel({ events, todoEvents, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
         <CalendarView
           events={events}
+          extraEvents={todoEvents}
           onDateClick={onDateClick}
           onEventClick={onEventClick}
         />
@@ -1175,33 +1192,33 @@ export default function DashboardPage() {
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
   const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
 
-  // Merge real events with synthetic calendar entries derived from todos that
-  // have a due date. Skip completed todos and those already linked to a real
-  // calendar event (to avoid duplicates).
-  const visibleEvents = useMemo<Event[]>(() => {
-    const todoEvents: Event[] = todos
+  const visibleEvents = useMemo(() => events, [events]);
+
+  // Build calendar entries from todos that have a due date, colored by priority.
+  // Skip todos already linked to a real calendar event (to avoid duplicates).
+  const todoCalendarEvents = useMemo<EventInput[]>(() => {
+    return todos
       .filter((t) => t.due_at && !t.linked_event_id)
       .map((t) => {
-        const dateStr = t.due_at!.slice(0, 10); // YYYY-MM-DD
+        const dateStr = t.due_at!.slice(0, 10);
         const prefix = t.status === "done" ? "☑" : "☐";
+        const color = todoPriorityColor(t.priority);
         return {
           id: `todo::${t.id}`,
-          user_id: t.user_id,
           title: `${prefix} ${t.title}`,
-          description: t.description,
-          start_at: `${dateStr}T00:00:00`,
-          end_at: `${dateStr}T23:59:59`,
-          all_day: true,
-          category_id: t.category_id,
-          rrule: null,
-          reminder_offset_minutes: null,
-          created_by_ai: t.created_by_ai,
-          created_at: t.created_at,
-          updated_at: t.updated_at,
+          start: `${dateStr}T00:00:00`,
+          end: `${dateStr}T23:59:59`,
+          allDay: true,
+          backgroundColor: color.bg,
+          borderColor: color.border,
+          textColor: color.text,
+          extendedProps: {
+            sourceEventId: `todo::${t.id}`,
+            priority: t.priority,
+          },
         };
       });
-    return [...events, ...todoEvents];
-  }, [events, todos]);
+  }, [todos]);
 
   function openComposerForDate(date: Date, allDay: boolean) {
     const ymd = format(date, "yyyy-MM-dd");
@@ -1296,6 +1313,7 @@ export default function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start">
           <CalendarPanel
             events={visibleEvents}
+            todoEvents={todoCalendarEvents}
             onDateClick={openComposerForDate}
             onEventClick={handleEventClick}
             onAddEvent={handleAddEvent}

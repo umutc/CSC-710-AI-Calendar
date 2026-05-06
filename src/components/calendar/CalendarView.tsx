@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import type { EventInput } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -41,12 +42,14 @@ const DEFAULT_VISIBLE_RANGE = {
 
 interface CalendarViewProps {
   events: Event[];
+  extraEvents?: EventInput[];
   onDateClick?: (date: Date, allDay: boolean) => void;
   onEventClick?: (eventId: string) => void;
 }
 
 export default function CalendarView({
   events,
+  extraEvents,
   onDateClick,
   onEventClick,
 }: CalendarViewProps) {
@@ -54,8 +57,8 @@ export default function CalendarView({
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
 
   const concreteEvents = useMemo(
-    () => expandRecurringEvents(events, visibleRange),
-    [events, visibleRange]
+    () => [...expandRecurringEvents(events, visibleRange), ...(extraEvents ?? [])],
+    [events, extraEvents, visibleRange]
   );
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
