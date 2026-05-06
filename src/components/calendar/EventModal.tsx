@@ -74,7 +74,6 @@ export default function EventModal({
         rrule: null,
         reminder_offset_minutes: reminder,
       });
-      toast.success("Event created");
     } else if (mode === "edit" && eventId) {
       await updateEvent(eventId, {
         title: values.title.trim(),

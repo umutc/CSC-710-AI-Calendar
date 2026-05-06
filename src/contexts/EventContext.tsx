@@ -12,7 +12,6 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import type { Event, RRulePreset } from "../types";
 
-// ─── State + Actions ───────────────────────────────────────────────────────
 export interface EventState {
   events: Event[];
   loading: boolean;
@@ -37,24 +36,20 @@ export function eventReducer(state: EventState, action: EventAction): EventState
   switch (action.type) {
     case "SET_EVENTS":
       return { ...state, events: action.payload };
-    case "ADD_EVENT": {
-      if (state.events.some((e) => e.id === action.payload.id)) {
+    case "ADD_EVENT":
+      if (state.events.some((event) => event.id === action.payload.id)) {
         return state;
       }
       return { ...state, events: [...state.events, action.payload] };
-    }
     case "UPDATE_EVENT": {
-      const idx = state.events.findIndex((e) => e.id === action.payload.id);
-      if (idx === -1) return state;
+      const index = state.events.findIndex((event) => event.id === action.payload.id);
+      if (index === -1) return state;
       const next = state.events.slice();
-      next[idx] = action.payload;
+      next[index] = action.payload;
       return { ...state, events: next };
     }
-    case "DELETE_EVENT": {
-      const filtered = state.events.filter((e) => e.id !== action.payload.id);
-      if (filtered.length === state.events.length) return state;
-      return { ...state, events: filtered };
-    }
+    case "DELETE_EVENT":
+      return { ...state, events: state.events.filter((event) => event.id !== action.payload.id) };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
     case "SET_ERROR":
@@ -64,7 +59,6 @@ export function eventReducer(state: EventState, action: EventAction): EventState
   }
 }
 
-// ─── Context value shape ──────────────────────────────────────────────────
 export interface CreateEventInput {
   title: string;
   description?: string | null;
@@ -76,22 +70,31 @@ export interface CreateEventInput {
   reminder_offset_minutes?: number | null;
 }
 
+export interface UpdateEventInput {
+  title?: string;
+  description?: string | null;
+  start_at?: string;
+  end_at?: string;
+  all_day?: boolean;
+  category_id?: string | null;
+  rrule?: RRulePreset | null;
+  reminder_offset_minutes?: number | null;
+}
+
 export interface EventContextValue {
   events: Event[];
   loading: boolean;
   error: string | null;
   createEvent: (input: CreateEventInput) => Promise<string | null>;
-  updateEvent: (id: string, patch: Partial<Event>) => Promise<void>;
+  updateEvent: (id: string, input: UpdateEventInput) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
 }
 
 export const EventContext = createContext<EventContextValue | null>(null);
 
-// ─── Provider ──────────────────────────────────────────────────────────────
 export function EventProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(eventReducer, initialEventState);
-
   const eventsRef = useRef<Event[]>(state.events);
   eventsRef.current = state.events;
 
@@ -121,6 +124,7 @@ export function EventProvider({ children }: { children: ReactNode }) {
       } else {
         dispatch({ type: "SET_EVENTS", payload: (data ?? []) as Event[] });
       }
+
       dispatch({ type: "SET_LOADING", payload: false });
     })();
 
@@ -161,6 +165,7 @@ export function EventProvider({ children }: { children: ReactNode }) {
         toast.error("Not signed in");
         return null;
       }
+
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       const optimistic: Event = {
@@ -178,6 +183,7 @@ export function EventProvider({ children }: { children: ReactNode }) {
         created_at: now,
         updated_at: now,
       };
+
       dispatch({ type: "ADD_EVENT", payload: optimistic });
 
       const { error } = await supabase.from("events").insert({
@@ -198,50 +204,53 @@ export function EventProvider({ children }: { children: ReactNode }) {
         toast.error(`Failed to create event: ${error.message}`);
         return null;
       }
+
+      toast.success("Event created");
       return id;
     },
     [user?.id]
   );
 
-  const updateEvent = useCallback(async (id: string, patch: Partial<Event>) => {
-    const snapshot = eventsRef.current.find((e) => e.id === id);
-    if (!snapshot) {
-      toast.error("Event not found");
-      return;
-    }
-    const optimistic: Event = {
-      ...snapshot,
-      ...patch,
-      updated_at: new Date().toISOString(),
-    };
-    dispatch({ type: "UPDATE_EVENT", payload: optimistic });
+  const updateEvent = useCallback(
+    async (id: string, input: UpdateEventInput): Promise<void> => {
+      const existing = eventsRef.current.find((e) => e.id === id);
+      if (!existing) return;
 
-    const { error } = await supabase
-      .from("events")
-      .update(patch)
-      .eq("id", id);
+      const updated: Event = { ...existing, ...input, updated_at: new Date().toISOString() };
+      dispatch({ type: "UPDATE_EVENT", payload: updated });
 
-    if (error) {
-      dispatch({ type: "UPDATE_EVENT", payload: snapshot });
-      toast.error(`Failed to update event: ${error.message}`);
-    }
-  }, []);
+      const { error } = await supabase
+        .from("events")
+        .update(input)
+        .eq("id", id);
 
-  const deleteEvent = useCallback(async (id: string) => {
-    const snapshot = eventsRef.current.find((e) => e.id === id);
-    if (!snapshot) {
-      toast.error("Event not found");
-      return;
-    }
-    dispatch({ type: "DELETE_EVENT", payload: { id } });
+      if (error) {
+        dispatch({ type: "UPDATE_EVENT", payload: existing });
+        toast.error(`Failed to update event: ${error.message}`);
+      }
+    },
+    []
+  );
 
-    const { error } = await supabase.from("events").delete().eq("id", id);
+  const deleteEvent = useCallback(
+    async (id: string): Promise<void> => {
+      const existing = eventsRef.current.find((e) => e.id === id);
+      if (!existing) return;
 
-    if (error) {
-      dispatch({ type: "ADD_EVENT", payload: snapshot });
-      toast.error(`Failed to delete event: ${error.message}`);
-    }
-  }, []);
+      dispatch({ type: "DELETE_EVENT", payload: { id } });
+
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        dispatch({ type: "ADD_EVENT", payload: existing });
+        toast.error(`Failed to delete event: ${error.message}`);
+      }
+    },
+    []
+  );
 
   const value = useMemo<EventContextValue>(
     () => ({
@@ -252,17 +261,8 @@ export function EventProvider({ children }: { children: ReactNode }) {
       updateEvent,
       deleteEvent,
     }),
-    [
-      state.events,
-      state.loading,
-      state.error,
-      createEvent,
-      updateEvent,
-      deleteEvent,
-    ]
+    [state.events, state.loading, state.error, createEvent, updateEvent, deleteEvent]
   );
 
-  return (
-    <EventContext.Provider value={value}>{children}</EventContext.Provider>
-  );
+  return <EventContext.Provider value={value}>{children}</EventContext.Provider>;
 }
