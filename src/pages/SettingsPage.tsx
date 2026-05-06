@@ -9,10 +9,12 @@ import {
   Palette,
   Shield,
   Sun,
+  Tag,
   User,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import CategoryManager from "../components/settings/CategoryManager";
 import type { ThemePreference } from "../lib/themeUtils";
 
 const settingsSections = [
@@ -201,6 +203,24 @@ export default function SettingsPage() {
       {/* Content */}
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <AppearanceSection />
+
+        <section className="panel-surface mb-8 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600">
+              <Tag className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Categories</h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Organize events and todos with colored categories. Default categories
+                are seeded on signup; you can rename, recolor, or remove any of them.
+              </p>
+              <div className="mt-5">
+                <CategoryManager />
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* User info banner */}
         <div className="panel-surface mb-8 p-6">
