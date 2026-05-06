@@ -1,10 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import type { EventInput } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
-import type { DatesSetArg, EventMountArg } from "@fullcalendar/core";
+import type { DateClickArg } from "@fullcalendar/interaction";
+import type {
+  DatesSetArg,
+  EventClickArg,
+  EventMountArg,
+} from "@fullcalendar/core";
 import { expandRecurringEvents } from "../../lib/rruleHelpers";
 import type { Event } from "../../types";
 
@@ -34,50 +40,25 @@ const DEFAULT_VISIBLE_RANGE = {
   end: new Date("2026-06-01T00:00:00"),
 };
 
-const MOCK_EVENTS: Event[] = [
-  {
-    id: "mock-design-review",
-    user_id: "mock-user",
-    title: "Design review",
-    description: null,
-    start_at: "2026-04-29T14:00:00",
-    end_at: "2026-04-29T15:00:00",
-    all_day: false,
-    category_id: null,
-    rrule: null,
-    reminder_offset_minutes: null,
-    created_by_ai: false,
-    created_at: "2026-04-28T10:00:00",
-    updated_at: "2026-04-28T10:00:00",
-  },
-  {
-    id: "mock-demo-dry-run",
-    user_id: "mock-user",
-    title: "Demo dry run",
-    description: null,
-    start_at: "2026-05-14T14:00:00",
-    end_at: "2026-05-14T15:30:00",
-    all_day: false,
-    category_id: null,
-    rrule: null,
-    reminder_offset_minutes: null,
-    created_by_ai: false,
-    created_at: "2026-05-13T10:00:00",
-    updated_at: "2026-05-13T10:00:00",
-  },
-];
-
 interface CalendarViewProps {
-  events?: Event[];
+  events: Event[];
+  extraEvents?: EventInput[];
+  onDateClick?: (date: Date, allDay: boolean) => void;
+  onEventClick?: (eventId: string) => void;
 }
 
-export default function CalendarView({ events = MOCK_EVENTS }: CalendarViewProps) {
+export default function CalendarView({
+  events,
+  extraEvents,
+  onDateClick,
+  onEventClick,
+}: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
 
   const concreteEvents = useMemo(
-    () => expandRecurringEvents(events, visibleRange),
-    [events, visibleRange]
+    () => [...expandRecurringEvents(events, visibleRange), ...(extraEvents ?? [])],
+    [events, extraEvents, visibleRange]
   );
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
@@ -86,11 +67,7 @@ export default function CalendarView({ events = MOCK_EVENTS }: CalendarViewProps
     } catch {
       /* localStorage may be unavailable */
     }
-
-    setVisibleRange({
-      start: arg.start,
-      end: arg.end,
-    });
+    setVisibleRange({ start: arg.start, end: arg.end });
   }, []);
 
   const handleEventDidMount = useCallback((info: EventMountArg) => {
@@ -99,6 +76,23 @@ export default function CalendarView({ events = MOCK_EVENTS }: CalendarViewProps
       info.el.classList.add("fc-event-past");
     }
   }, []);
+
+  const handleDateClick = useCallback(
+    (arg: DateClickArg) => {
+      onDateClick?.(arg.date, arg.allDay);
+    },
+    [onDateClick]
+  );
+
+  const handleEventClick = useCallback(
+    (arg: EventClickArg) => {
+      const sourceId =
+        (arg.event.extendedProps as { sourceEventId?: string })?.sourceEventId ??
+        arg.event.id;
+      if (sourceId) onEventClick?.(sourceId);
+    },
+    [onEventClick]
+  );
 
   return (
     <div className="fc-dayforma">
@@ -119,10 +113,12 @@ export default function CalendarView({ events = MOCK_EVENTS }: CalendarViewProps
         }}
         datesSet={handleDatesSet}
         eventDidMount={handleEventDidMount}
+        dateClick={handleDateClick}
+        eventClick={handleEventClick}
         events={concreteEvents}
         height={720}
         editable={false}
-        selectable={false}
+        selectable={true}
         dayMaxEvents={3}
         fixedWeekCount={false}
         nowIndicator={true}

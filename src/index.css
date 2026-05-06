@@ -833,3 +833,62 @@ body {
 .animate-shake {
   animation: shake 0.4s ease-out;
 }
+
+/* ─── Todo priority colors on calendar ────────────────────────────────────── */
+.fc-todo-urgent {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+}
+.fc-todo-urgent .fc-event-main { color: #b91c1c !important; }
+
+.fc-todo-high {
+  background-color: #ffe4e6 !important;
+  border-color: #fda4af !important;
+  color: #be123c !important;
+}
+.fc-todo-high .fc-event-main { color: #be123c !important; }
+
+.fc-todo-medium {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+.fc-todo-medium .fc-event-main { color: #92400e !important; }
+
+.fc-todo-low {
+  background-color: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+}
+.fc-todo-low .fc-event-main { color: #0369a1 !important; }
+
+/* Dark mode overrides */
+:where([data-theme="dark"]) .fc-todo-urgent {
+  background-color: rgba(239, 68, 68, 0.20) !important;
+  border-color: rgba(239, 68, 68, 0.40) !important;
+  color: #fca5a5 !important;
+}
+:where([data-theme="dark"]) .fc-todo-urgent .fc-event-main { color: #fca5a5 !important; }
+
+:where([data-theme="dark"]) .fc-todo-high {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+  color: #fda4af !important;
+}
+:where([data-theme="dark"]) .fc-todo-high .fc-event-main { color: #fda4af !important; }
+
+:where([data-theme="dark"]) .fc-todo-medium {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fcd34d !important;
+}
+:where([data-theme="dark"]) .fc-todo-medium .fc-event-main { color: #fcd34d !important; }
+
+:where([data-theme="dark"]) .fc-todo-low {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  border-color: rgba(14, 165, 233, 0.30) !important;
+  color: #7dd3fc !important;
+}
+:where([data-theme="dark"]) .fc-todo-low .fc-event-main { color: #7dd3fc !important; }
+

@@ -6,36 +6,36 @@ export type VisibleRange = {
   end: Date;
 };
 
-function addDays(date: Date, days: number): Date {
+export function addDays(date: Date, days: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
 }
 
-function addMonths(date: Date, months: number): Date {
+export function addMonths(date: Date, months: number): Date {
   const next = new Date(date);
   next.setMonth(next.getMonth() + months);
   return next;
 }
 
-function startOfDay(date: Date): Date {
+export function startOfDay(date: Date): Date {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
   return next;
 }
 
-function endOfDay(date: Date): Date {
+export function endOfDay(date: Date): Date {
   const next = new Date(date);
   next.setHours(23, 59, 59, 999);
   return next;
 }
 
-function daysBetween(start: Date, end: Date): number {
+export function daysBetween(start: Date, end: Date): number {
   const millisecondsPerDay = 24 * 60 * 60 * 1000;
   return Math.floor((startOfDay(end).getTime() - startOfDay(start).getTime()) / millisecondsPerDay);
 }
 
-function isWeekday(date: Date): boolean {
+export function isWeekday(date: Date): boolean {
   const day = date.getDay();
   return day >= 1 && day <= 5;
 }
