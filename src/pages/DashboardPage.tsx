@@ -463,14 +463,14 @@ function EventComposer({
 function todoPriorityColor(priority: Priority): { bg: string; border: string; text: string } {
   switch (priority) {
     case "urgent":
-      return { bg: "#dc2626", border: "#b91c1c", text: "#ffffff" };
+      return { bg: "#fee2e2", border: "#b91c1c", text: "#b91c1c" };
     case "high":
-      return { bg: "#e11d48", border: "#be123c", text: "#ffffff" };
+      return { bg: "#ffe4e6", border: "#be123c", text: "#be123c" };
     case "medium":
-      return { bg: "#d97706", border: "#b45309", text: "#ffffff" };
+      return { bg: "#fef3c7", border: "#92400e", text: "#92400e" };
     case "low":
     default:
-      return { bg: "#0284c7", border: "#0369a1", text: "#ffffff" };
+      return { bg: "#e0f2fe", border: "#0369a1", text: "#0369a1" };
   }
 }
 
