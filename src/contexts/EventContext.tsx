@@ -70,11 +70,24 @@ export interface CreateEventInput {
   reminder_offset_minutes?: number | null;
 }
 
+export interface UpdateEventInput {
+  title?: string;
+  description?: string | null;
+  start_at?: string;
+  end_at?: string;
+  all_day?: boolean;
+  category_id?: string | null;
+  rrule?: RRulePreset | null;
+  reminder_offset_minutes?: number | null;
+}
+
 export interface EventContextValue {
   events: Event[];
   loading: boolean;
   error: string | null;
   createEvent: (input: CreateEventInput) => Promise<string | null>;
+  updateEvent: (id: string, input: UpdateEventInput) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
 }
 
 export const EventContext = createContext<EventContextValue | null>(null);
@@ -198,14 +211,57 @@ export function EventProvider({ children }: { children: ReactNode }) {
     [user?.id]
   );
 
+  const updateEvent = useCallback(
+    async (id: string, input: UpdateEventInput): Promise<void> => {
+      const existing = eventsRef.current.find((e) => e.id === id);
+      if (!existing) return;
+
+      const updated: Event = { ...existing, ...input, updated_at: new Date().toISOString() };
+      dispatch({ type: "UPDATE_EVENT", payload: updated });
+
+      const { error } = await supabase
+        .from("events")
+        .update(input)
+        .eq("id", id);
+
+      if (error) {
+        dispatch({ type: "UPDATE_EVENT", payload: existing });
+        toast.error(`Failed to update event: ${error.message}`);
+      }
+    },
+    []
+  );
+
+  const deleteEvent = useCallback(
+    async (id: string): Promise<void> => {
+      const existing = eventsRef.current.find((e) => e.id === id);
+      if (!existing) return;
+
+      dispatch({ type: "DELETE_EVENT", payload: { id } });
+
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        dispatch({ type: "ADD_EVENT", payload: existing });
+        toast.error(`Failed to delete event: ${error.message}`);
+      }
+    },
+    []
+  );
+
   const value = useMemo<EventContextValue>(
     () => ({
       events: state.events,
       loading: state.loading,
       error: state.error,
       createEvent,
+      updateEvent,
+      deleteEvent,
     }),
-    [state.events, state.loading, state.error, createEvent]
+    [state.events, state.loading, state.error, createEvent, updateEvent, deleteEvent]
   );
 
   return <EventContext.Provider value={value}>{children}</EventContext.Provider>;

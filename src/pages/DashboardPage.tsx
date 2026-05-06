@@ -22,6 +22,10 @@ type TodoDraft = {
   title: string;
   due_at: string;
   priority: Priority;
+  eventStartTime: string;
+  eventEndTime: string;
+  eventRecurrence: EventFormState["recurrence"];
+  eventWeekdays: number[];
 };
 
 type EventFormState = {
@@ -128,6 +132,19 @@ function getDefaultEventFormState(): EventFormState {
     recurrence: "none",
     weekdays: [new Date(`${isoDate}T00:00:00`).getDay()],
   };
+}
+
+function rruleToFormState(rrule: RRulePreset): {
+  recurrence: EventFormState["recurrence"];
+  weekdays: number[];
+} {
+  switch (rrule.preset) {
+    case "daily": return { recurrence: "daily", weekdays: [] };
+    case "weekday": return { recurrence: "weekday", weekdays: [] };
+    case "weekly": return { recurrence: "weekly", weekdays: rrule.weekdays };
+    case "biweekly": return { recurrence: "biweekly", weekdays: rrule.weekdays };
+    case "monthly": return { recurrence: "monthly", weekdays: [] };
+  }
 }
 
 function buildRRule(form: EventFormState): RRulePreset | null {
@@ -557,6 +574,74 @@ function TodoRow({
                   <option value="low">Low</option>
                 </select>
               </div>
+              {todo.status === "scheduled" && todo.linked_event_id && draft && (
+                <div className="space-y-3 rounded-2xl border border-violet-600/20 bg-violet-50/60 p-3 dark:border-violet-400/15 dark:bg-violet-500/10">
+                  <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">Recurring event schedule</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <label className="grid gap-1">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Start time</span>
+                      <input
+                        className="rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                        onChange={(e) => onDraftChange({ eventStartTime: e.target.value })}
+                        onKeyDown={onEditKeyDown}
+                        type="time"
+                        value={draft.eventStartTime}
+                      />
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">End time</span>
+                      <input
+                        className="rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                        onChange={(e) => onDraftChange({ eventEndTime: e.target.value })}
+                        onKeyDown={onEditKeyDown}
+                        type="time"
+                        value={draft.eventEndTime}
+                      />
+                    </label>
+                  </div>
+                  <select
+                    className="w-full rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                    onChange={(e) => onDraftChange({ eventRecurrence: e.target.value as EventFormState["recurrence"] })}
+                    onKeyDown={onEditKeyDown}
+                    value={draft.eventRecurrence}
+                  >
+                    <option value="none">Does not repeat</option>
+                    <option value="daily">Every day</option>
+                    <option value="weekday">Every weekday (Mon–Fri)</option>
+                    <option value="weekly">Weekly on selected days</option>
+                    <option value="biweekly">Every other week (biweekly)</option>
+                    <option value="monthly">Monthly on due date day</option>
+                  </select>
+                  {(draft.eventRecurrence === "weekly" || draft.eventRecurrence === "biweekly") && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {weekdayOptions.map((day) => {
+                        const active = draft.eventWeekdays.includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                              active
+                                ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
+                                : "border border-slate-900/10 bg-white text-slate-600 hover:bg-slate-900/[0.06] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-white/10"
+                            }`}
+                            onClick={() =>
+                              onDraftChange({
+                                eventWeekdays: active
+                                  ? draft.eventWeekdays.filter((v) => v !== day.value)
+                                  : [...draft.eventWeekdays, day.value].sort((a, b) => a - b),
+                              })
+                            }
+                            type="button"
+                          >
+                            {day.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <button
                   className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-700 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
@@ -633,7 +718,7 @@ function TodoRow({
 
 function TodoPanel({ mobile = false }: { mobile?: boolean }) {
   const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
-  const { createEvent } = useEvents();
+  const { events, createEvent, updateEvent, deleteEvent } = useEvents();
   const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("medium");
@@ -729,11 +814,32 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
 
   function handleEditStart(todo: Todo) {
     setEditingTodoId(todo.id);
-    setDraft({
-      title: todo.title,
-      due_at: toDateInputValue(todo.due_at),
-      priority: todo.priority,
-    });
+
+    if (todo.status === "scheduled" && todo.linked_event_id) {
+      const event = events.find((e) => e.id === todo.linked_event_id);
+      const { recurrence, weekdays } = event?.rrule
+        ? rruleToFormState(event.rrule)
+        : { recurrence: "none" as const, weekdays: [] };
+      setDraft({
+        title: todo.title,
+        due_at: toDateInputValue(todo.due_at) || (event?.start_at.slice(0, 10) ?? ""),
+        priority: todo.priority,
+        eventStartTime: event ? event.start_at.slice(11, 16) : "09:00",
+        eventEndTime: event ? event.end_at.slice(11, 16) : "10:00",
+        eventRecurrence: recurrence,
+        eventWeekdays: weekdays,
+      });
+    } else {
+      setDraft({
+        title: todo.title,
+        due_at: toDateInputValue(todo.due_at),
+        priority: todo.priority,
+        eventStartTime: "09:00",
+        eventEndTime: "10:00",
+        eventRecurrence: "none",
+        eventWeekdays: [],
+      });
+    }
   }
 
   function handleEditCancel() {
@@ -746,6 +852,30 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
 
     const trimmedTitle = draft.title.trim();
     if (!trimmedTitle) return;
+
+    const todo = todos.find((t) => t.id === editingTodoId);
+
+    if (todo?.linked_event_id) {
+      const baseDate = draft.due_at || new Date().toISOString().slice(0, 10);
+      await updateEvent(todo.linked_event_id, {
+        title: trimmedTitle,
+        start_at: `${baseDate}T${draft.eventStartTime}:00`,
+        end_at: `${baseDate}T${draft.eventEndTime}:00`,
+        rrule: buildRRule({
+          title: trimmedTitle,
+          startDate: baseDate,
+          startTime: draft.eventStartTime,
+          endDate: baseDate,
+          endTime: draft.eventEndTime,
+          allDay: false,
+          recurrence: draft.eventRecurrence,
+          weekdays:
+            draft.eventWeekdays.length > 0
+              ? draft.eventWeekdays
+              : [new Date(`${baseDate}T00:00:00`).getDay()],
+        }),
+      });
+    }
 
     await updateTodo(editingTodoId, {
       title: trimmedTitle,
@@ -770,6 +900,10 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
   }
 
   async function handleDelete(id: string) {
+    const todo = todos.find((t) => t.id === id);
+    if (todo?.linked_event_id) {
+      await deleteEvent(todo.linked_event_id);
+    }
     await deleteTodo(id);
     if (editingTodoId === id) {
       handleEditCancel();
