@@ -6,8 +6,39 @@ import { useAuth } from "../hooks/useAuth";
 import { useEvents } from "../hooks/useEvents";
 import { useTodos } from "../hooks/useTodos";
 import CalendarView from "../components/calendar/CalendarView";
+import EventModal from "../components/calendar/EventModal";
 import ThemeToggle from "../components/common/ThemeToggle";
+import type { EventFormValues } from "../lib/schemas/event";
 import type { Event, Priority, RRulePreset, Todo } from "../types";
+
+type EditModalState =
+  | { mode: "closed" }
+  | { mode: "edit"; eventId: string; initialValues: Partial<EventFormValues> };
+
+function eventToFormValues(ev: Event): Partial<EventFormValues> {
+  const start = parseISO(ev.start_at);
+  const end = parseISO(ev.end_at);
+  if (ev.all_day) {
+    return {
+      title: ev.title,
+      description: ev.description,
+      all_day: true,
+      start_local: format(start, "yyyy-MM-dd"),
+      end_local: format(end, "yyyy-MM-dd"),
+      category_id: ev.category_id,
+      reminder_offset_minutes: ev.reminder_offset_minutes,
+    };
+  }
+  return {
+    title: ev.title,
+    description: ev.description,
+    all_day: false,
+    start_local: format(start, "yyyy-MM-dd'T'HH:mm"),
+    end_local: format(end, "yyyy-MM-dd'T'HH:mm"),
+    category_id: ev.category_id,
+    reminder_offset_minutes: ev.reminder_offset_minutes,
+  };
+}
 
 type AgendaEvent = {
   title: string;
@@ -428,11 +459,22 @@ function EventComposer({
   );
 }
 
-function CalendarPanel({ events }: { events: Event[] }) {
+interface CalendarPanelProps {
+  events: Event[];
+  onDateClick: (date: Date, allDay: boolean) => void;
+  onEventClick: (id: string) => void;
+  onAddEvent: () => void;
+}
+
+function CalendarPanel({ events, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
-        <CalendarView events={events} />
+        <CalendarView
+          events={events}
+          onDateClick={onDateClick}
+          onEventClick={onEventClick}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
@@ -444,6 +486,7 @@ function CalendarPanel({ events }: { events: Event[] }) {
             </div>
             <button
               className="rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              onClick={onAddEvent}
               type="button"
             >
               Add event
@@ -1129,8 +1172,46 @@ export default function DashboardPage() {
   const [eventComposerOpen, setEventComposerOpen] = useState(false);
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
+  const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
 
   const visibleEvents = useMemo(() => events, [events]);
+
+  function openComposerForDate(date: Date, allDay: boolean) {
+    const ymd = format(date, "yyyy-MM-dd");
+    const startTime = allDay ? "09:00" : format(date, "HH:mm");
+    const endDate = new Date(date.getTime() + 60 * 60 * 1000);
+    const endTime = allDay ? "10:00" : format(endDate, "HH:mm");
+    setEventForm({
+      title: "",
+      startDate: ymd,
+      startTime,
+      endDate: ymd,
+      endTime,
+      allDay,
+      recurrence: "none",
+      weekdays: [date.getDay()],
+    });
+    setEventComposerOpen(true);
+  }
+
+  function handleAddEvent() {
+    setEventForm(getDefaultEventFormState());
+    setEventComposerOpen(true);
+  }
+
+  function handleEventClick(id: string) {
+    const ev = events.find((e) => e.id === id);
+    if (!ev) return;
+    setEditModalState({
+      mode: "edit",
+      eventId: id,
+      initialValues: eventToFormValues(ev),
+    });
+  }
+
+  function closeEditModal() {
+    setEditModalState({ mode: "closed" });
+  }
 
   async function handleLogout() {
     await signOut();
@@ -1186,7 +1267,12 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start">
-          <CalendarPanel events={visibleEvents} />
+          <CalendarPanel
+            events={visibleEvents}
+            onDateClick={openComposerForDate}
+            onEventClick={handleEventClick}
+            onAddEvent={handleAddEvent}
+          />
           <aside className="hidden lg:block">
             <TodoPanel />
           </aside>
@@ -1219,6 +1305,16 @@ export default function DashboardPage() {
         onSubmit={() => void handleCreateEvent()}
         onToggleWeekday={handleToggleWeekday}
         open={eventComposerOpen}
+      />
+
+      <EventModal
+        open={editModalState.mode === "edit"}
+        onClose={closeEditModal}
+        mode="edit"
+        eventId={editModalState.mode === "edit" ? editModalState.eventId : undefined}
+        initialValues={
+          editModalState.mode === "edit" ? editModalState.initialValues : undefined
+        }
       />
 
       <div

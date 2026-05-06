@@ -12,13 +12,13 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import type { Event, RRulePreset } from "../types";
 
-interface EventState {
+export interface EventState {
   events: Event[];
   loading: boolean;
   error: string | null;
 }
 
-type EventAction =
+export type EventAction =
   | { type: "SET_EVENTS"; payload: Event[] }
   | { type: "ADD_EVENT"; payload: Event }
   | { type: "UPDATE_EVENT"; payload: Event }
@@ -26,13 +26,13 @@ type EventAction =
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null };
 
-const initialEventState: EventState = {
+export const initialEventState: EventState = {
   events: [],
   loading: true,
   error: null,
 };
 
-function eventReducer(state: EventState, action: EventAction): EventState {
+export function eventReducer(state: EventState, action: EventAction): EventState {
   switch (action.type) {
     case "SET_EVENTS":
       return { ...state, events: action.payload };
