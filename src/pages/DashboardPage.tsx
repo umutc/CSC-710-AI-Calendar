@@ -460,20 +460,6 @@ function EventComposer({
   );
 }
 
-function todoPriorityColor(priority: Priority): { bg: string; border: string; text: string } {
-  switch (priority) {
-    case "urgent":
-      return { bg: "#fee2e2", border: "#b91c1c", text: "#b91c1c" };
-    case "high":
-      return { bg: "#ffe4e6", border: "#be123c", text: "#be123c" };
-    case "medium":
-      return { bg: "#fef3c7", border: "#92400e", text: "#92400e" };
-    case "low":
-    default:
-      return { bg: "#e0f2fe", border: "#0369a1", text: "#0369a1" };
-  }
-}
-
 interface CalendarPanelProps {
   events: Event[];
   todoEvents?: EventInput[];
@@ -1202,16 +1188,13 @@ export default function DashboardPage() {
       .map((t) => {
         const dateStr = t.due_at!.slice(0, 10);
         const prefix = t.status === "done" ? "☑" : "☐";
-        const color = todoPriorityColor(t.priority);
         return {
           id: `todo::${t.id}`,
           title: `${prefix} ${t.title}`,
           start: `${dateStr}T00:00:00`,
           end: `${dateStr}T23:59:59`,
           allDay: true,
-          backgroundColor: color.bg,
-          borderColor: color.border,
-          textColor: color.text,
+          classNames: [`fc-todo-${t.priority}`],
           extendedProps: {
             sourceEventId: `todo::${t.id}`,
             priority: t.priority,
