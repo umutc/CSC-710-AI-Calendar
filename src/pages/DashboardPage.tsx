@@ -70,6 +70,7 @@ type EventFormState = {
   allDay: boolean;
   recurrence: "none" | "daily" | "weekday" | "weekly" | "biweekly" | "monthly";
   weekdays: number[];
+  categoryId: string | null;
 };
 
 const agenda: AgendaEvent[] = [
@@ -164,6 +165,7 @@ function getDefaultEventFormState(): EventFormState {
     allDay: false,
     recurrence: "none",
     weekdays: [new Date(`${isoDate}T00:00:00`).getDay()],
+    categoryId: null,
   };
 }
 
@@ -288,6 +290,7 @@ function EventComposer({
   onChange,
   onToggleWeekday,
   onSubmit,
+  categories,
 }: {
   open: boolean;
   form: EventFormState;
@@ -296,6 +299,7 @@ function EventComposer({
   onChange: (patch: Partial<EventFormState>) => void;
   onToggleWeekday: (weekday: number) => void;
   onSubmit: () => void;
+  categories: { id: string; name: string }[];
 }) {
   if (!open) return null;
 
@@ -373,15 +377,35 @@ function EventComposer({
               </label>
             </div>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-200">
-              <input
-                checked={form.allDay}
-                className="h-4 w-4 accent-cyan-300"
-                onChange={(event) => onChange({ allDay: event.target.checked })}
-                type="checkbox"
-              />
-              All-day event
-            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-200">
+                <input
+                  checked={form.allDay}
+                  className="h-4 w-4 accent-cyan-300"
+                  onChange={(event) => onChange({ allDay: event.target.checked })}
+                  type="checkbox"
+                />
+                All-day event
+              </label>
+
+              <label className="grid gap-2 text-sm text-slate-300">
+                <span>Category</span>
+                <select
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  onChange={(event) =>
+                    onChange({ categoryId: event.target.value === "" ? null : event.target.value })
+                  }
+                  value={form.categoryId ?? ""}
+                >
+                  <option value="">(none)</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
             <label className="grid gap-2 text-sm text-slate-300">
               <span>Repeat</span>
@@ -1290,6 +1314,7 @@ export default function DashboardPage() {
       start_at: startAt,
       end_at: endAt,
       all_day: eventForm.allDay,
+      category_id: eventForm.categoryId,
       rrule: buildRRule(eventForm),
     });
 
@@ -1340,6 +1365,7 @@ export default function DashboardPage() {
       </main>
 
       <EventComposer
+        categories={categories}
         form={eventForm}
         loading={eventSubmitting}
         onChange={(patch) => setEventForm((current) => ({ ...current, ...patch }))}

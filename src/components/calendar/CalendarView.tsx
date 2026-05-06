@@ -58,10 +58,22 @@ export default function CalendarView({
   const calendarRef = useRef<FullCalendar>(null);
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
 
-  const concreteEvents = useMemo(
-    () => [...expandRecurringEvents(events, visibleRange), ...(extraEvents ?? [])],
-    [events, extraEvents, visibleRange]
-  );
+  const concreteEvents = useMemo(() => {
+    const expanded = expandRecurringEvents(events, visibleRange);
+    return [...expanded, ...(extraEvents ?? [])].map((ev) => {
+      const catId = ev.extendedProps?.categoryId as string | undefined;
+      if (catId && categoryColorMap?.[catId]) {
+        const color = categoryColorMap[catId];
+        return {
+          ...ev,
+          backgroundColor: color,
+          borderColor: color,
+          textColor: "#ffffff",
+        };
+      }
+      return ev;
+    });
+  }, [events, extraEvents, visibleRange, categoryColorMap]);
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     try {
@@ -77,21 +89,7 @@ export default function CalendarView({
     if (eventEnd && eventEnd < new Date()) {
       info.el.classList.add("fc-event-past");
     }
-
-    // Apply category color if available
-    const catId = info.event.extendedProps?.categoryId as string | undefined;
-    if (catId && categoryColorMap?.[catId]) {
-      const color = categoryColorMap[catId];
-      info.el.style.backgroundColor = color;
-      info.el.style.borderColor = color;
-      // Use white text on colored backgrounds for readability
-      info.el.style.color = "#ffffff";
-      const mainEl = info.el.querySelector(".fc-event-main") as HTMLElement | null;
-      if (mainEl) mainEl.style.color = "#ffffff";
-      const titleEl = info.el.querySelector(".fc-event-title") as HTMLElement | null;
-      if (titleEl) titleEl.style.color = "#ffffff";
-    }
-  }, [categoryColorMap]);
+  }, []);
 
   const handleDateClick = useCallback(
     (arg: DateClickArg) => {
