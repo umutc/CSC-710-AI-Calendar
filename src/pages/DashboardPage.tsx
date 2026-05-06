@@ -1180,15 +1180,14 @@ export default function DashboardPage() {
   // calendar event (to avoid duplicates).
   const visibleEvents = useMemo<Event[]>(() => {
     const todoEvents: Event[] = todos
-      .filter(
-        (t) => t.due_at && t.status !== "done" && !t.linked_event_id
-      )
+      .filter((t) => t.due_at && !t.linked_event_id)
       .map((t) => {
         const dateStr = t.due_at!.slice(0, 10); // YYYY-MM-DD
+        const prefix = t.status === "done" ? "☑" : "☐";
         return {
           id: `todo::${t.id}`,
           user_id: t.user_id,
-          title: `☐ ${t.title}`,
+          title: `${prefix} ${t.title}`,
           description: t.description,
           start_at: `${dateStr}T00:00:00`,
           end_at: `${dateStr}T23:59:59`,
