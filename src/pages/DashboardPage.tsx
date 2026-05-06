@@ -1167,6 +1167,7 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
 export default function DashboardPage() {
   const { user, profile, signOut } = useAuth();
   const { events, createEvent } = useEvents();
+  const { todos } = useTodos();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [eventComposerOpen, setEventComposerOpen] = useState(false);
@@ -1174,7 +1175,34 @@ export default function DashboardPage() {
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
   const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
 
-  const visibleEvents = useMemo(() => events, [events]);
+  // Merge real events with synthetic calendar entries derived from todos that
+  // have a due date. Skip completed todos and those already linked to a real
+  // calendar event (to avoid duplicates).
+  const visibleEvents = useMemo<Event[]>(() => {
+    const todoEvents: Event[] = todos
+      .filter(
+        (t) => t.due_at && t.status !== "done" && !t.linked_event_id
+      )
+      .map((t) => {
+        const dateStr = t.due_at!.slice(0, 10); // YYYY-MM-DD
+        return {
+          id: `todo::${t.id}`,
+          user_id: t.user_id,
+          title: `☐ ${t.title}`,
+          description: t.description,
+          start_at: `${dateStr}T00:00:00`,
+          end_at: `${dateStr}T23:59:59`,
+          all_day: true,
+          category_id: t.category_id,
+          rrule: null,
+          reminder_offset_minutes: null,
+          created_by_ai: t.created_by_ai,
+          created_at: t.created_at,
+          updated_at: t.updated_at,
+        };
+      });
+    return [...events, ...todoEvents];
+  }, [events, todos]);
 
   function openComposerForDate(date: Date, allDay: boolean) {
     const ymd = format(date, "yyyy-MM-dd");
