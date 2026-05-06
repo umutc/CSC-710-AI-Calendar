@@ -7,6 +7,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@^0.40.0";
 import { createClient } from "jsr:@supabase/supabase-js@^2.57.4";
 
 const CLAUDE_MODEL = "claude-sonnet-4-6";
+const MAX_STORED_MESSAGES = 50;
 
 const SYSTEM_PROMPT = `You are Dayforma, a calendar and todo assistant. You help the user plan
 their day by creating, updating, and deleting events and todos on their behalf.
@@ -131,12 +132,12 @@ serve(async (req: Request) => {
     .map((block) => block.text)
     .join("\n");
 
-  // ── 4. Persist updated conversation ──────────────────────────────────────────
+  // ── 4. Persist updated conversation (trimmed to last 50 messages) ─────────────
   const updatedMessages: StoredMessage[] = [
     ...history,
     { role: "user", content: body.message },
     { role: "assistant", content: assistantText },
-  ];
+  ].slice(-MAX_STORED_MESSAGES);
 
   if (conversationId) {
     await supabase
