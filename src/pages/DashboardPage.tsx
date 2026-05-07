@@ -1254,6 +1254,7 @@ export default function DashboardPage() {
       allDay,
       recurrence: "none",
       weekdays: [date.getDay()],
+      categoryId: null,
     });
     setEventComposerOpen(true);
   }
@@ -1264,13 +1265,18 @@ export default function DashboardPage() {
   }
 
   function handleEventClick(id: string) {
-    const ev = events.find((e) => e.id === id);
-    if (!ev) return;
-    setEditModalState({
-      mode: "edit",
-      eventId: id,
-      initialValues: eventToFormValues(ev),
-    });
+    try {
+      const ev = events.find((e) => e.id === id);
+      if (!ev) return;
+      setEditModalState({
+        mode: "edit",
+        eventId: id,
+        initialValues: eventToFormValues(ev),
+      });
+    } catch (err) {
+      console.error("Failed to open edit modal:", err);
+      toast.error("Could not open event details.");
+    }
   }
 
   function closeEditModal() {

@@ -59,20 +59,25 @@ export default function CalendarView({
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
 
   const concreteEvents = useMemo(() => {
-    const expanded = expandRecurringEvents(events, visibleRange);
-    return [...expanded, ...(extraEvents ?? [])].map((ev) => {
-      const catId = ev.extendedProps?.categoryId as string | undefined;
-      if (catId && categoryColorMap?.[catId]) {
-        const color = categoryColorMap[catId];
-        return {
-          ...ev,
-          backgroundColor: color,
-          borderColor: color,
-          textColor: "#ffffff",
-        };
-      }
-      return ev;
-    });
+    try {
+      const expanded = expandRecurringEvents(events, visibleRange);
+      return [...expanded, ...(extraEvents ?? [])].map((ev) => {
+        const catId = ev.extendedProps?.categoryId as string | undefined;
+        if (catId && categoryColorMap?.[catId]) {
+          const color = categoryColorMap[catId];
+          return {
+            ...ev,
+            backgroundColor: color,
+            borderColor: color,
+            textColor: "#ffffff",
+          };
+        }
+        return ev;
+      });
+    } catch (err) {
+      console.error("Failed to calculate concrete events:", err);
+      return [];
+    }
   }, [events, extraEvents, visibleRange, categoryColorMap]);
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
