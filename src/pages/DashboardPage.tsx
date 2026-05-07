@@ -21,25 +21,39 @@ function eventToFormValues(ev: Event): Partial<EventFormValues> {
   const start = parseISO(ev.start_at);
   const end = parseISO(ev.end_at);
   if (ev.all_day) {
+    try {
+      return {
+        title: ev.title,
+        description: ev.description,
+        all_day: true,
+        start_local: format(start, "yyyy-MM-dd"),
+        end_local: format(end, "yyyy-MM-dd"),
+        category_id: ev.category_id,
+        reminder_offset_minutes: ev.reminder_offset_minutes,
+      };
+    } catch (err) {
+      console.error("eventToFormValues all_day failed:", err, ev);
+    }
+  }
+  try {
     return {
       title: ev.title,
       description: ev.description,
-      all_day: true,
-      start_local: format(start, "yyyy-MM-dd"),
-      end_local: format(end, "yyyy-MM-dd"),
+      all_day: false,
+      start_local: format(start, "yyyy-MM-dd'T'HH:mm"),
+      end_local: format(end, "yyyy-MM-dd'T'HH:mm"),
       category_id: ev.category_id,
       reminder_offset_minutes: ev.reminder_offset_minutes,
     };
+  } catch (err) {
+    console.error("eventToFormValues failed:", err, ev);
+    return {
+      title: ev.title,
+      all_day: ev.all_day,
+      start_local: "",
+      end_local: "",
+    };
   }
-  return {
-    title: ev.title,
-    description: ev.description,
-    all_day: false,
-    start_local: format(start, "yyyy-MM-dd'T'HH:mm"),
-    end_local: format(end, "yyyy-MM-dd'T'HH:mm"),
-    category_id: ev.category_id,
-    reminder_offset_minutes: ev.reminder_offset_minutes,
-  };
 }
 
 type AgendaEvent = {
@@ -1211,8 +1225,12 @@ export default function DashboardPage() {
   // Build a lookup map from category id → hex color for calendar rendering
   const categoryColorMap = useMemo<Record<string, string>>(() => {
     const map: Record<string, string> = {};
-    for (const cat of categories) {
-      map[cat.id] = cat.color;
+    if (categories && Array.isArray(categories)) {
+      for (const cat of categories) {
+        if (cat && cat.id) {
+          map[cat.id] = cat.color;
+        }
+      }
     }
     return map;
   }, [categories]);

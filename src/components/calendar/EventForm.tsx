@@ -1,4 +1,4 @@
-import { useEffect, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { eventFormSchema, type EventFormValues } from "../../lib/schemas/event";
@@ -9,7 +9,7 @@ interface EventFormProps {
   onSubmit: (values: EventFormValues) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
-  extraFooter?: React.ReactNode;
+  extraFooter?: ReactNode;
 }
 
 const EMPTY_VALUES: EventFormValues = {
@@ -169,7 +169,7 @@ export default function EventForm({
           })}
         >
           <option value="">(none)</option>
-          {categories.map((c) => (
+          {(categories || []).map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
