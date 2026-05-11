@@ -165,7 +165,7 @@ export default function CalendarView({
       {tooltip &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[99999] max-w-xs -translate-x-1/2 translate-y-3 rounded-lg border border-slate-900/10 bg-slate-900/95 px-3 py-2 text-sm text-white shadow-xl backdrop-blur-sm dark:border-white/10 dark:bg-white/95 dark:text-slate-900"
+            className="pointer-events-none fixed z-[99999] max-w-xs -translate-x-1/2 translate-y-3 rounded-md border border-slate-900/10 bg-slate-900/75 px-2.5 py-1.5 text-xs text-white shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-white/75 dark:text-slate-900"
             style={{ left: tooltip.x, top: tooltip.y }}
           >
             {tooltip.text}
