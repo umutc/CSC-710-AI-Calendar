@@ -6,8 +6,10 @@ import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
 import { useTodos } from "../hooks/useTodos";
+import { useHolidays } from "../hooks/useHolidays";
 import CalendarView from "../components/calendar/CalendarView";
 import EventModal from "../components/calendar/EventModal";
+import HolidayModal from "../components/calendar/HolidayModal";
 import ThemeToggle from "../components/common/ThemeToggle";
 import type { EventInput } from "@fullcalendar/core";
 import type { EventFormValues } from "../lib/schemas/event";
@@ -503,20 +505,20 @@ function EventComposer({
 
 interface CalendarPanelProps {
   events: Event[];
-  todoEvents?: EventInput[];
+  extraEvents?: EventInput[];
   categoryColorMap?: Record<string, string>;
   onDateClick: (date: Date, allDay: boolean) => void;
   onEventClick: (id: string) => void;
   onAddEvent: () => void;
 }
 
-function CalendarPanel({ events, todoEvents, categoryColorMap, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
+function CalendarPanel({ events, extraEvents, categoryColorMap, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
         <CalendarView
           events={events}
-          extraEvents={todoEvents}
+          extraEvents={extraEvents}
           categoryColorMap={categoryColorMap}
           onDateClick={onDateClick}
           onEventClick={onEventClick}
@@ -1215,12 +1217,14 @@ export default function DashboardPage() {
   const { events, createEvent } = useEvents();
   const { categories } = useCategories();
   const { todos } = useTodos();
+  const holidays = useHolidays();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [eventComposerOpen, setEventComposerOpen] = useState(false);
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
   const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
+  const [holidayModalData, setHolidayModalData] = useState<{title: string, date: string, type: string, description: string} | null>(null);
 
   const visibleEvents = useMemo(() => events, [events]);
 
@@ -1285,8 +1289,20 @@ export default function DashboardPage() {
   }
 
   function handleEventClick(id: string) {
-    // Skip todo calendar entries — they use "todo::" prefix and are not real events
     if (id.startsWith("todo::")) {
+      return;
+    }
+
+    if (id.startsWith("holiday-")) {
+      const holidayEvent = holidays.find(h => h.id === id);
+      if (holidayEvent) {
+        setHolidayModalData({
+          title: holidayEvent.title || "",
+          date: holidayEvent.start as string,
+          type: holidayEvent.extendedProps?.type || "public",
+          description: holidayEvent.extendedProps?.description || ""
+        });
+      }
       return;
     }
 
@@ -1369,7 +1385,7 @@ export default function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start">
           <CalendarPanel
             events={visibleEvents}
-            todoEvents={todoCalendarEvents}
+            extraEvents={[...todoCalendarEvents, ...holidays]}
             categoryColorMap={categoryColorMap}
             onDateClick={openComposerForDate}
             onEventClick={handleEventClick}
@@ -1418,6 +1434,12 @@ export default function DashboardPage() {
         initialValues={
           editModalState.mode === "edit" ? editModalState.initialValues : undefined
         }
+      />
+
+      <HolidayModal
+        open={holidayModalData !== null}
+        onClose={() => setHolidayModalData(null)}
+        holiday={holidayModalData}
       />
 
       <div

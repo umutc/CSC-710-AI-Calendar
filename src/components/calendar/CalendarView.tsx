@@ -94,6 +94,8 @@ export default function CalendarView({
     if (eventEnd && eventEnd < new Date()) {
       info.el.classList.add("fc-event-past");
     }
+    // Add tooltip for full title visibility
+    info.el.title = info.event.title;
   }, []);
 
   const handleDateClick = useCallback(
