@@ -1,6 +1,7 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
+import { toast } from "sonner";
 import { Calendar, Check, LogOut, Pencil, Settings, Trash2, X } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
@@ -452,11 +453,10 @@ function EventComposer({
                     return (
                       <button
                         key={day.value}
-                        className={`rounded-full px-3 py-2 text-sm font-medium transition ${
-                          active
+                        className={`rounded-full px-3 py-2 text-sm font-medium transition ${active
                             ? "bg-cyan-500 text-white dark:bg-cyan-300 dark:text-slate-950"
                             : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                        }`}
+                          }`}
                         onClick={() => onToggleWeekday(day.value)}
                         type="button"
                       >
@@ -612,22 +612,20 @@ function TodoRow({
 
   return (
     <article
-      className={`rounded-3xl border px-4 py-4 ${
-        done
+      className={`rounded-3xl border px-4 py-4 ${done
           ? "border-slate-900/[0.08] bg-slate-900/[0.03] text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400"
           : "border-slate-900/10 bg-white/95 text-slate-900 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100"
-      }`}
+        }`}
     >
       <div className="flex items-start gap-3">
         <button
           aria-label={done ? "Mark as pending" : "Mark as done"}
-          className={`mt-1 h-5 w-5 shrink-0 rounded-full border transition ${
-            done
+          className={`mt-1 h-5 w-5 shrink-0 rounded-full border transition ${done
               ? "border-emerald-500 bg-emerald-500 text-white dark:border-emerald-300 dark:bg-emerald-300 dark:text-slate-950"
               : todo.status === "scheduled"
                 ? "border-violet-500/60 bg-violet-100 text-violet-700 hover:border-emerald-500 dark:border-violet-300/60 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:border-emerald-300"
                 : "border-slate-400 text-transparent hover:border-emerald-500 dark:border-slate-500 dark:hover:border-emerald-300"
-          }`}
+            }`}
           onClick={() => onToggle(todo.id)}
           type="button"
         >
@@ -710,11 +708,10 @@ function TodoRow({
                         return (
                           <button
                             key={day.value}
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                              active
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${active
                                 ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
                                 : "border border-slate-900/10 bg-white text-slate-600 hover:bg-slate-900/[0.06] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-white/10"
-                            }`}
+                              }`}
                             onClick={() =>
                               onDraftChange({
                                 eventWeekdays: active
@@ -754,9 +751,8 @@ function TodoRow({
             <>
               <div className="flex items-start justify-between gap-3">
                 <button
-                  className={`text-left font-medium transition hover:text-cyan-700 dark:hover:text-cyan-200 ${
-                    done ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-white"
-                  }`}
+                  className={`text-left font-medium transition hover:text-cyan-700 dark:hover:text-cyan-200 ${done ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-white"
+                    }`}
                   onClick={() => onEditStart(todo)}
                   type="button"
                 >
@@ -1105,11 +1101,10 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
                       return (
                         <button
                           key={day.value}
-                          className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                            active
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${active
                               ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
                               : "border border-slate-900/10 bg-white text-slate-600 hover:bg-slate-900/[0.06] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-white/10"
-                          }`}
+                            }`}
                           onClick={() =>
                             setNewEventWeekdays((prev) =>
                               active
@@ -1141,22 +1136,20 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
           </div>
           <div className="flex gap-2">
             <button
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                sortMode === "priority"
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${sortMode === "priority"
                   ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
                   : "border border-slate-900/10 bg-slate-900/[0.04] text-slate-700 hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-              }`}
+                }`}
               onClick={() => setSortMode("priority")}
               type="button"
             >
               Priority
             </button>
             <button
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                sortMode === "due"
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${sortMode === "due"
                   ? "bg-cyan-600 text-white dark:bg-cyan-300 dark:text-slate-950"
                   : "border border-slate-900/10 bg-slate-900/[0.04] text-slate-700 hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-              }`}
+                }`}
               onClick={() => setSortMode("due")}
               type="button"
             >
@@ -1224,7 +1217,7 @@ export default function DashboardPage() {
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
   const [editModalState, setEditModalState] = useState<EditModalState>({ mode: "closed" });
-  const [holidayModalData, setHolidayModalData] = useState<{title: string, date: string, type: string, description: string} | null>(null);
+  const [holidayModalData, setHolidayModalData] = useState<{ title: string, date: string, type: string, description: string } | null>(null);
 
   const visibleEvents = useMemo(() => events, [events]);
 
@@ -1443,16 +1436,14 @@ export default function DashboardPage() {
       />
 
       <div
-        className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm transition lg:hidden dark:bg-slate-950/70 ${
-          mobileDrawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-        }`}
+        className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm transition lg:hidden dark:bg-slate-950/70 ${mobileDrawerOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          }`}
         onClick={() => setMobileDrawerOpen(false)}
       />
 
       <div
-        className={`fixed inset-x-0 bottom-0 z-40 max-h-[85vh] transition duration-300 ease-out lg:hidden ${
-          mobileDrawerOpen ? "translate-y-0" : "translate-y-full"
-        }`}
+        className={`fixed inset-x-0 bottom-0 z-40 max-h-[85vh] transition duration-300 ease-out lg:hidden ${mobileDrawerOpen ? "translate-y-0" : "translate-y-full"
+          }`}
       >
         <div className="mx-auto max-w-2xl px-3 pb-3">
           <div className="mb-2 flex justify-center">
