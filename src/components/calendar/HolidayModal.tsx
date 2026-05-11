@@ -44,7 +44,7 @@ export default function HolidayModal({ open, onClose, holiday }: HolidayModalPro
                   {holiday.title}
                 </h3>
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                  {new Date(holiday.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {new Date(`${holiday.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
             </div>

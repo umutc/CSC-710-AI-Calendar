@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { EventInput } from "@fullcalendar/core";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import type { EventInput, EventHoveringArg } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -57,6 +58,7 @@ export default function CalendarView({
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const concreteEvents = useMemo(() => {
     try {
@@ -94,8 +96,6 @@ export default function CalendarView({
     if (eventEnd && eventEnd < new Date()) {
       info.el.classList.add("fc-event-past");
     }
-    // Add tooltip for full title visibility
-    info.el.title = info.event.title;
   }, []);
 
   const handleDateClick = useCallback(
@@ -114,6 +114,18 @@ export default function CalendarView({
     },
     [onEventClick]
   );
+
+  const handleMouseEnter = useCallback((arg: EventHoveringArg) => {
+    setTooltip({
+      x: arg.jsEvent.clientX,
+      y: arg.jsEvent.clientY,
+      text: arg.event.title,
+    });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+  }, []);
 
   return (
     <div className="fc-dayforma">
@@ -136,6 +148,8 @@ export default function CalendarView({
         eventDidMount={handleEventDidMount}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
+        eventMouseEnter={handleMouseEnter}
+        eventMouseLeave={handleMouseLeave}
         events={concreteEvents}
         height={720}
         editable={false}
@@ -148,6 +162,16 @@ export default function CalendarView({
         slotMinTime="00:00:00"
         slotMaxTime="24:00:00"
       />
+      {tooltip &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[99999] max-w-xs -translate-x-1/2 translate-y-3 rounded-lg border border-slate-900/10 bg-slate-900/95 px-3 py-2 text-sm text-white shadow-xl backdrop-blur-sm dark:border-white/10 dark:bg-white/95 dark:text-slate-900"
+            style={{ left: tooltip.x, top: tooltip.y }}
+          >
+            {tooltip.text}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
