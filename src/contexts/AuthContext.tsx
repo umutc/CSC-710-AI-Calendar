@@ -54,20 +54,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Bootstrap: get current session + listen for changes ──────────────────
   useEffect(() => {
-    // 1. Fetch existing session
+    // 1. Fetch existing session. This is the source of truth for initial load
+    // because it waits for local storage.
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        fetchProfile(currentUser.id);
+        fetchProfile(currentUser.id).finally(() => {
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    // 2. Subscribe to auth state changes
+    // 2. Subscribe to auth state changes (login, logout, token refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === "INITIAL_SESSION") return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
@@ -75,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
       }
-      setLoading(false);
     });
 
     return () => {

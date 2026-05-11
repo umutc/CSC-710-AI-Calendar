@@ -56,8 +56,9 @@ export function useCategories(): UseCategoriesResult {
       setLoading(false);
     })();
 
+    const channelId = crypto.randomUUID();
     const channel = supabase
-      .channel(`categories:${user.id}`)
+      .channel(`categories:${user.id}:${channelId}`)
       .on(
         "postgres_changes",
         {

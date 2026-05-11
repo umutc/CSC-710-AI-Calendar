@@ -30,6 +30,7 @@ function eventToFormValues(ev: Event): Partial<EventFormValues> {
         end_local: format(end, "yyyy-MM-dd"),
         category_id: ev.category_id,
         reminder_offset_minutes: ev.reminder_offset_minutes,
+        rrule: ev.rrule,
       };
     } catch (err) {
       console.error("eventToFormValues all_day failed:", err, ev);
@@ -44,6 +45,7 @@ function eventToFormValues(ev: Event): Partial<EventFormValues> {
       end_local: format(end, "yyyy-MM-dd'T'HH:mm"),
       category_id: ev.category_id,
       reminder_offset_minutes: ev.reminder_offset_minutes,
+      rrule: ev.rrule,
     };
   } catch (err) {
     console.error("eventToFormValues failed:", err, ev);
@@ -52,6 +54,7 @@ function eventToFormValues(ev: Event): Partial<EventFormValues> {
       all_day: ev.all_day,
       start_local: "",
       end_local: "",
+      rrule: ev.rrule,
     };
   }
 }
@@ -260,12 +263,7 @@ function DashboardHeader({
           <span className="hidden rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1 text-xs text-slate-500 sm:inline-flex dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-400">
             Dashboard
           </span>
-          <button
-            className="hidden rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/[0.08] sm:inline-flex dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:hover:bg-white/10"
-            type="button"
-          >
-            Week view
-          </button>
+          {/* Removed standalone Week view button */}
           <button
             className="inline-flex rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600 lg:hidden dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
             onClick={onOpenTodos}
@@ -317,21 +315,25 @@ function EventComposer({
 }) {
   if (!open) return null;
 
+  const inputClasses =
+    "w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20";
+  const labelClasses = "grid gap-2 text-sm text-slate-700 dark:text-slate-300";
+
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm dark:bg-slate-950/75" onClick={onClose} />
       <div className="fixed inset-x-0 top-10 z-50 mx-auto w-[min(92vw,40rem)]">
         <div className="panel-surface p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Add Event</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Create recurring event</h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Add Event</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Create recurring event</h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
                 Examples: work Mon-Fri from 9AM-5PM, dance practice every Wednesday 6PM-7PM.
               </p>
             </div>
             <button
-              className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
+              className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white"
               onClick={onClose}
               type="button"
             >
@@ -341,26 +343,26 @@ function EventComposer({
 
           <div className="mt-5 grid gap-4">
             <input
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+              className={inputClasses}
               onChange={(event) => onChange({ title: event.target.value })}
               placeholder="Event title"
               value={form.title}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm text-slate-300">
+              <label className={labelClasses}>
                 <span>Start date</span>
                 <input
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  className={inputClasses}
                   onChange={(event) => onChange({ startDate: event.target.value })}
                   type="date"
                   value={form.startDate}
                 />
               </label>
-              <label className="grid gap-2 text-sm text-slate-300">
+              <label className={labelClasses}>
                 <span>End date</span>
                 <input
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  className={inputClasses}
                   onChange={(event) => onChange({ endDate: event.target.value })}
                   type="date"
                   value={form.endDate}
@@ -369,20 +371,20 @@ function EventComposer({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm text-slate-300">
+              <label className={labelClasses}>
                 <span>Start time</span>
                 <input
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  className={inputClasses}
                   disabled={form.allDay}
                   onChange={(event) => onChange({ startTime: event.target.value })}
                   type="time"
                   value={form.startTime}
                 />
               </label>
-              <label className="grid gap-2 text-sm text-slate-300">
+              <label className={labelClasses}>
                 <span>End time</span>
                 <input
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  className={inputClasses}
                   disabled={form.allDay}
                   onChange={(event) => onChange({ endTime: event.target.value })}
                   type="time"
@@ -392,20 +394,20 @@ function EventComposer({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-200">
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200">
                 <input
                   checked={form.allDay}
-                  className="h-4 w-4 accent-cyan-300"
+                  className="h-4 w-4 accent-cyan-500 dark:accent-cyan-300"
                   onChange={(event) => onChange({ allDay: event.target.checked })}
                   type="checkbox"
                 />
                 All-day event
               </label>
 
-              <label className="grid gap-2 text-sm text-slate-300">
+              <label className={labelClasses}>
                 <span>Category</span>
                 <select
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                  className={inputClasses}
                   onChange={(event) =>
                     onChange({ categoryId: event.target.value === "" ? null : event.target.value })
                   }
@@ -421,10 +423,10 @@ function EventComposer({
               </label>
             </div>
 
-            <label className="grid gap-2 text-sm text-slate-300">
+            <label className={labelClasses}>
               <span>Repeat</span>
               <select
-                className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-200 outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20"
+                className={inputClasses}
                 onChange={(event) =>
                   onChange({ recurrence: event.target.value as EventFormState["recurrence"] })
                 }
@@ -441,7 +443,7 @@ function EventComposer({
 
             {(form.recurrence === "weekly" || form.recurrence === "biweekly") && (
               <div className="grid gap-2">
-                <p className="text-sm text-slate-300">Weekdays</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">Weekdays</p>
                 <div className="flex flex-wrap gap-2">
                   {weekdayOptions.map((day) => {
                     const active = form.weekdays.includes(day.value);
@@ -450,8 +452,8 @@ function EventComposer({
                         key={day.value}
                         className={`rounded-full px-3 py-2 text-sm font-medium transition ${
                           active
-                            ? "bg-cyan-300 text-slate-950"
-                            : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                            ? "bg-cyan-500 text-white dark:bg-cyan-300 dark:text-slate-950"
+                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
                         }`}
                         onClick={() => onToggleWeekday(day.value)}
                         type="button"
@@ -464,7 +466,7 @@ function EventComposer({
               </div>
             )}
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300">
               {form.recurrence === "weekday" && "This event will repeat Monday through Friday."}
               {form.recurrence === "biweekly" && "This event will repeat every other week on the selected days."}
               {form.recurrence === "monthly" &&
@@ -477,14 +479,14 @@ function EventComposer({
 
             <div className="flex justify-end gap-3">
               <button
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                 onClick={onClose}
                 type="button"
               >
                 Cancel
               </button>
               <button
-                className="rounded-full bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
                 disabled={loading}
                 onClick={onSubmit}
                 type="button"
@@ -1283,13 +1285,22 @@ export default function DashboardPage() {
   }
 
   function handleEventClick(id: string) {
+    // Skip todo calendar entries — they use "todo::" prefix and are not real events
+    if (id.startsWith("todo::")) {
+      return;
+    }
+
     try {
       const ev = events.find((e) => e.id === id);
-      if (!ev) return;
+      if (!ev) {
+        console.warn("Event not found for id:", id);
+        return;
+      }
+      const formValues = eventToFormValues(ev);
       setEditModalState({
         mode: "edit",
         eventId: id,
-        initialValues: eventToFormValues(ev),
+        initialValues: formValues,
       });
     } catch (err) {
       console.error("Failed to open edit modal:", err);

@@ -401,30 +401,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ─── Divider ────────────────────────────────────────────────── */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-900/15 dark:border-slate-700/50" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-white/95 text-slate-500 dark:bg-slate-900/80">or</span>
-            </div>
-          </div>
-
-          {/* ─── Demo button ────────────────────────────────────────────── */}
-          <button
-            id="demo-btn"
-            onClick={handleDemo}
-            disabled={demoLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-900/15 bg-slate-900/[0.04] text-slate-700 text-sm font-medium hover:bg-slate-900/[0.08] hover:border-slate-900/25 active:scale-[0.98] transition-all duration-200 dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:border-slate-600/50"
-          >
-            {demoLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            )}
-            Try Demo
-          </button>
+          {/* Removed Demo Button */}
 
           {/* ─── Toggle mode ────────────────────────────────────────────── */}
           <p className="text-center text-sm text-slate-500 mt-6">

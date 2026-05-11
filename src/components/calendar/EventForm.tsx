@@ -1,4 +1,5 @@
-import { useEffect, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, useRef, useLayoutEffect, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { eventFormSchema, type EventFormValues } from "../../lib/schemas/event";
@@ -23,7 +24,144 @@ const EMPTY_VALUES: EventFormValues = {
   reminder_offset_minutes: null,
 };
 
-export default function EventForm({
+function CategorySelect({
+  value,
+  onChange,
+  categories,
+  disabled
+}: {
+  value: string | null;
+  onChange: (val: string | null) => void;
+  categories: { id: string; name: string; color?: string }[];
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
+  const updatePosition = () => {
+    if (open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: `${rect.bottom + 4}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        zIndex: 99999, // ensures it sits on top of everything
+      });
+    }
+  };
+
+  useLayoutEffect(() => {
+    updatePosition();
+    if (open) {
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+    }
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        buttonRef.current && !buttonRef.current.contains(e.target as Node) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const selectedCat = categories.find((c) => c.id === value);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+      >
+        <div className="flex items-center gap-2 truncate">
+          {selectedCat ? (
+            <>
+              <div
+                className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
+                style={{ backgroundColor: selectedCat.color }}
+              />
+              <span className="truncate">{selectedCat.name}</span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 flex-shrink-0" />
+              <span className="truncate">None</span>
+            </>
+          )}
+        </div>
+        <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+        </svg>
+      </button>
+
+      {open && !disabled && createPortal(
+        <div 
+          ref={dropdownRef} 
+          style={dropdownStyle} 
+          className="max-h-60 overflow-auto rounded-md bg-white py-1 shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-slate-800 dark:ring-slate-700"
+        >
+          <button
+            type="button"
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition ${
+              !value ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" : "text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700"
+            }`}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+          >
+            <div className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 flex-shrink-0" />
+            <span className="truncate">None</span>
+          </button>
+          
+          {categories.map((c) => {
+            const isSelected = value === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition ${
+                  isSelected ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" : "text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700"
+                }`}
+                onClick={() => {
+                  onChange(c.id);
+                  setOpen(false);
+                }}
+              >
+                <div
+                  className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
+                  style={{ backgroundColor: c.color }}
+                />
+                <span className="truncate">{c.name}</span>
+              </button>
+            );
+          })}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+function EventForm({
   defaultValues,
   onSubmit,
   onCancel,
@@ -156,43 +294,50 @@ export default function EventForm({
         </div>
       </div>
 
-      <div>
-        <label htmlFor="event-category" className={labelBase}>
-          Category
-        </label>
-        <select
-          id="event-category"
-          className={inputBase}
-          disabled={categoriesLoading}
-          {...register("category_id", {
-            setValueAs: (v) => (v === "" ? null : v),
-          })}
-        >
-          <option value="">(none)</option>
-          {(categories || []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+      <div className="mb-4">
+        <label className={labelBase}>Category</label>
+        <div className="mt-1">
+          <CategorySelect
+            value={watch("category_id")}
+            onChange={(val) => setValue("category_id", val, { shouldValidate: true })}
+            categories={categories || []}
+            disabled={categoriesLoading}
+          />
+        </div>
       </div>
 
       <div>
-        <label htmlFor="event-reminder" className={labelBase}>
-          Reminder offset (minutes before)
-        </label>
-        <input
-          id="event-reminder"
-          type="number"
-          min={0}
-          max={43200}
-          step={5}
-          className={inputBase}
-          placeholder="e.g. 15"
-          {...register("reminder_offset_minutes", {
-            setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+        <label className={labelBase}>Reminder</label>
+        <div className="flex flex-wrap items-center gap-2 mt-1">
+          {[
+            { label: "None", value: null },
+            { label: "At time", value: 0 },
+            { label: "5m before", value: 5 },
+            { label: "15m before", value: 15 },
+            { label: "30m before", value: 30 },
+            { label: "1h before", value: 60 },
+          ].map((opt) => {
+            const isSelected = watch("reminder_offset_minutes") === opt.value;
+            return (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() =>
+                  setValue("reminder_offset_minutes", opt.value, {
+                    shouldValidate: true,
+                  })
+                }
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                  isSelected
+                    ? "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 dark:ring-indigo-500"
+                    : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
           })}
-        />
+        </div>
         {errors.reminder_offset_minutes && (
           <p className={errorBase}>{errors.reminder_offset_minutes.message}</p>
         )}
@@ -221,4 +366,30 @@ export default function EventForm({
       </div>
     </form>
   );
+}
+
+import React from "react";
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      (window as any).__lastError = this.state.error;
+      return <div id="error-boundary-msg" className="p-4 text-red-500 bg-red-50 border border-red-500 overflow-auto">
+        <h2 className="font-bold">EventForm Crashed!</h2>
+        <pre className="text-xs">{String(this.state.error?.stack || this.state.error)}</pre>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
+export default function EventFormWrapper(props: EventFormProps) {
+  return <ErrorBoundary><EventForm {...props} /></ErrorBoundary>;
 }
