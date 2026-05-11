@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { EventInput, EventHoveringArg } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";

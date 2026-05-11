@@ -298,7 +298,7 @@ function EventForm({
         <label className={labelBase}>Category</label>
         <div className="mt-1">
           <CategorySelect
-            value={watch("category_id")}
+            value={watch("category_id") ?? null}
             onChange={(val) => setValue("category_id", val, { shouldValidate: true })}
             categories={categories || []}
             disabled={categoriesLoading}

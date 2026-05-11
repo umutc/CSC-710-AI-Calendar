@@ -12,7 +12,6 @@ import {
   EyeOff,
   Loader2,
   ArrowLeft,
-  Play,
 } from "lucide-react";
 
 // ─── Zod schemas ───────────────────────────────────────────────────────────
@@ -44,8 +43,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [demoLoading, setDemoLoading] = useState(false);
-  const { signIn, signUp, signInDemo } = useAuth();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   // ── Login form ──────────────────────────────────────────────────────────
@@ -94,19 +92,6 @@ export default function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Registration failed");
-    }
-  }
-
-  async function handleDemo() {
-    setError(null);
-    setDemoLoading(true);
-    try {
-      await signInDemo();
-      navigate("/dashboard", { replace: true });
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Demo login failed");
-    } finally {
-      setDemoLoading(false);
     }
   }
 

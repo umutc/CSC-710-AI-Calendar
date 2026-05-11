@@ -872,6 +872,7 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             newEventWeekdays.length > 0
               ? newEventWeekdays
               : [new Date(`${baseDate}T00:00:00`).getDay()],
+          categoryId: null,
         }),
       });
     }
@@ -960,6 +961,7 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
             draft.eventWeekdays.length > 0
               ? draft.eventWeekdays
               : [new Date(`${baseDate}T00:00:00`).getDay()],
+          categoryId: null,
         }),
       });
     }
