@@ -18,5 +18,5 @@
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src", "tests"],
-  "exclude": ["tests/integration", "supabase"]
+  "exclude": ["tests/integration", "tests/e2e", "supabase"]
 }
