@@ -1321,7 +1321,7 @@ export default function DashboardPage() {
       const todo = todos.find((t) => t.id === todoId);
       if (!todo) return;
 
-      if (shiftKey) {
+      if (!shiftKey) {
         const pad = (n: number) => String(n).padStart(2, "0");
         const toLocalISO = (d: Date) =>
           `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
