@@ -5,7 +5,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import { Bot, RotateCcw, Send, X } from "lucide-react";
+import { Bot, Camera, ImagePlus, RotateCcw, Send, X } from "lucide-react";
 import { useAIAssistant, type ChatMessage } from "../../hooks/useAIAssistant";
 import { useEvents } from "../../hooks/useEvents";
 import { useVoice } from "../../hooks/useVoice";
@@ -37,15 +37,20 @@ interface PanelContentProps {
   messages: ChatMessage[];
   loading: boolean;
   error: string | null;
-  onSend: (text: string, opts?: { voice?: boolean }) => Promise<void>;
+  onSend: (text: string, opts?: { voice?: boolean; imageFile?: File }) => Promise<void>;
   onClear: () => void;
   onClose: () => void;
 }
 
 function PanelContent({ messages, loading, error, onSend, onClear, onClose }: PanelContentProps) {
   const [draft, setDraft] = useState("");
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { isRecording, interimTranscript, supported, start, stop } = useVoice();
 
   useEffect(() => {
@@ -54,11 +59,66 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
     }
   }, [messages, loading]);
 
+  const stopCameraStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  const closeCamera = useCallback(() => {
+    stopCameraStream();
+    setCameraOpen(false);
+    setCameraError(null);
+  }, [stopCameraStream]);
+
+  const openCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown camera error";
+      setCameraError(message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraOpen]);
+
+  useEffect(() => stopCameraStream, [stopCameraStream]);
+
+  const captureFromCamera = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `camera-${Date.now()}.png`, { type: "image/png" });
+      setPendingImage(file);
+      closeCamera();
+    }, "image/png");
+  }, [closeCamera]);
+
   function handleSend() {
     const text = draft.trim();
-    if (!text || loading) return;
+    if ((!text && !pendingImage) || loading) return;
     setDraft("");
-    void onSend(text);
+    const fileToSend = pendingImage;
+    setPendingImage(null);
+    void onSend(text, fileToSend ? { imageFile: fileToSend } : undefined);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -73,7 +133,8 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <>
+      <div className="flex h-full flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
         <div className="flex items-center gap-2">
@@ -133,6 +194,31 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
 
       {/* Input */}
       <div className="border-t border-slate-200 p-3 dark:border-slate-800">
+        {pendingImage && (
+          <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-800/50">
+            <img
+              alt="Pending attachment"
+              className="h-8 w-8 rounded object-cover"
+              src={URL.createObjectURL(pendingImage)}
+            />
+            <span className="flex-1 truncate text-xs text-slate-600 dark:text-slate-400">
+              {pendingImage.name}
+            </span>
+            <button
+              aria-label="Remove image"
+              className="rounded-md p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+              onClick={() => setPendingImage(null)}
+              type="button"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+        {cameraError && (
+          <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            Camera unavailable: {cameraError}
+          </p>
+        )}
         <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 focus-within:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:focus-within:border-violet-500">
           <textarea
             ref={textareaRef}
@@ -144,6 +230,32 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
             rows={1}
             value={draft}
           />
+          <label
+            aria-label="Attach image"
+            className="mb-0.5 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            title="Attach image"
+          >
+            <input
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setPendingImage(file);
+                e.target.value = "";
+              }}
+              type="file"
+            />
+            <ImagePlus size={13} />
+          </label>
+          <button
+            aria-label="Take photo"
+            className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            onClick={openCamera}
+            title="Take photo"
+            type="button"
+          >
+            <Camera size={13} />
+          </button>
           <VoiceButton
             isRecording={isRecording}
             supported={supported}
@@ -154,7 +266,7 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
           <button
             aria-label="Send message"
             className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white transition hover:bg-violet-700 disabled:opacity-40 dark:bg-violet-500 dark:hover:bg-violet-600"
-            disabled={!draft.trim() || loading}
+            disabled={(!draft.trim() && !pendingImage) || loading}
             onClick={handleSend}
             type="button"
           >
@@ -167,10 +279,39 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
           </p>
         )}
         <p className="mt-1.5 text-center text-[10px] text-slate-400 dark:text-slate-600">
-          Enter to send · Shift+Enter for new line · Hold mic to speak
+          Enter to send · Shift+Enter for new line · Hold mic to speak · Image/camera for handwritten notes
         </p>
       </div>
     </div>
+    {cameraOpen && (
+      <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 p-4">
+        <video
+          ref={videoRef}
+          autoPlay
+          className="max-h-[70vh] max-w-[90vw] rounded-2xl shadow-2xl"
+          muted
+          playsInline
+        />
+        <div className="mt-5 flex gap-3">
+          <button
+            className="flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-violet-700"
+            onClick={captureFromCamera}
+            type="button"
+          >
+            <Camera className="h-4 w-4" />
+            Capture
+          </button>
+          <button
+            className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
+            onClick={closeCamera}
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

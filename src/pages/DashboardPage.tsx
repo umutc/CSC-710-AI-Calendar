@@ -6,6 +6,7 @@ import { Calendar, Camera, Check, ImagePlus, LogOut, Pencil, Settings, Sparkles,
 import AIAssistant from "../components/ai/AIAssistant";
 import { looksLikeNL } from "../lib/nlDetect";
 import { supabase } from "../lib/supabase";
+import { uploadTodoImage } from "../lib/imageUpload";
 import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
@@ -156,19 +157,6 @@ function toDateInputValue(value: string | null): string {
   return value.slice(0, 10);
 }
 
-async function uploadTodoImage(file: File, userId: string): Promise<string | null> {
-  const ext = file.name.split(".").pop() || "png";
-  const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage
-    .from("todo-attachments")
-    .upload(path, file, { contentType: file.type, upsert: false });
-  if (error) {
-    toast.error(`Image upload failed: ${error.message}`);
-    return null;
-  }
-  const { data } = supabase.storage.from("todo-attachments").getPublicUrl(path);
-  return data?.publicUrl ?? null;
-}
 
 function toneClasses(tone: string) {
   switch (tone) {

@@ -20,7 +20,15 @@ Rules:
 - Ask a short clarifying question when the input is ambiguous.
 - When scheduling, avoid collisions with existing events unless the user asks to overlap.
 - Prefer the user's working hours (9:00–18:00 local) unless told otherwise.
-- Always respond in English.`;
+- Always respond in English.
+
+Image input:
+- The user may attach an image — typically a photo or scan of a handwritten note.
+- Read the visible text first (best-effort OCR), then translate each item into the
+  appropriate tool call: a dated/timed item becomes an event; an undated task
+  becomes a todo. Infer priority/category when obvious.
+- For ambiguous bullets, prefer create_todo over create_event.
+- After acting, briefly summarise in English what you extracted from the image.`;
 
 type StoredMessage = {
   role: "user" | "assistant";
@@ -30,6 +38,7 @@ type StoredMessage = {
 interface AssistantRequest {
   conversation_id?: string;
   message: string;
+  image_url?: string | null;
   timezone?: string;
   voice?: boolean;
 }
@@ -73,8 +82,8 @@ serve(async (req: Request) => {
   }
 
   const body = (await req.json()) as AssistantRequest;
-  if (!body.message?.trim()) {
-    return new Response("message is required", { status: 400 });
+  if (!body.message?.trim() && !body.image_url) {
+    return new Response("message or image_url is required", { status: 400 });
   }
 
   // ── 2. Load conversation history ─────────────────────────────────────────────
@@ -121,10 +130,25 @@ serve(async (req: Request) => {
   ];
 
   type MessageParam = Anthropic.MessageParam;
-  let messages: MessageParam[] = [
-    ...history,
-    { role: "user", content: body.message },
-  ];
+
+  // Build the user message — vision content block when an image is attached.
+  const userMessage: MessageParam = body.image_url
+    ? {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: { type: "url", url: body.image_url },
+          },
+          {
+            type: "text",
+            text: body.message?.trim() || "Read this handwritten note and create relevant todos or events.",
+          },
+        ],
+      }
+    : { role: "user", content: body.message };
+
+  let messages: MessageParam[] = [...history, userMessage];
 
   let assistantText = "";
   const MAX_ITERATIONS = 5;
@@ -171,9 +195,14 @@ serve(async (req: Request) => {
   }
 
   // ── 4. Persist updated conversation (trimmed to last 50 messages) ─────────────
+  // Store only text in history; image references stay one-shot per turn.
+  const userHistoryText = body.image_url
+    ? `[image attached] ${body.message?.trim() ?? ""}`.trim()
+    : body.message;
+
   const updatedMessages: StoredMessage[] = [
     ...history,
-    { role: "user" as const, content: body.message },
+    { role: "user" as const, content: userHistoryText },
     { role: "assistant" as const, content: assistantText },
   ].slice(-MAX_STORED_MESSAGES);
 
