@@ -16,11 +16,17 @@ import {
 
 type ToolUseBlock = Anthropic.ToolUseBlock;
 
+export interface MutationRecord {
+  type: "create_event" | "update_event" | "delete_event" | "create_todo";
+  id: string;
+  snapshot: Record<string, unknown> | null;
+}
+
 export async function executeTool(
   block: ToolUseBlock,
   supabase: SupabaseClient,
   userId: string
-): Promise<unknown> {
+): Promise<Record<string, unknown>> {
   switch (block.name) {
     case "create_event": {
       const input = CreateEventSchema.parse(block.input);
@@ -52,11 +58,23 @@ export async function executeTool(
         .single();
 
       if (error) return { error: error.message };
-      return { success: true, event: data };
+      return {
+        success: true,
+        event: data,
+        mutation: { type: "create_event", id: data.id, snapshot: null } satisfies MutationRecord,
+      };
     }
 
     case "update_event": {
       const input = UpdateEventSchema.parse(block.input);
+
+      const { data: existing } = await supabase
+        .from("events")
+        .select("title, start_at, end_at, all_day, description, category_id, rrule, reminder_offset_minutes")
+        .eq("id", input.id)
+        .eq("user_id", userId)
+        .single();
+
       const updates: Record<string, unknown> = {};
       if (input.title !== undefined) updates.title = input.title;
       if (input.start_at !== undefined) updates.start_at = input.start_at;
@@ -71,11 +89,22 @@ export async function executeTool(
         .eq("user_id", userId);
 
       if (error) return { error: error.message };
-      return { success: true };
+      return {
+        success: true,
+        mutation: { type: "update_event", id: input.id, snapshot: existing ?? null } satisfies MutationRecord,
+      };
     }
 
     case "delete_event": {
       const input = DeleteEventSchema.parse(block.input);
+
+      const { data: existing } = await supabase
+        .from("events")
+        .select("title, start_at, end_at, all_day, description, category_id, rrule, reminder_offset_minutes")
+        .eq("id", input.id)
+        .eq("user_id", userId)
+        .single();
+
       const { error } = await supabase
         .from("events")
         .delete()
@@ -83,7 +112,10 @@ export async function executeTool(
         .eq("user_id", userId);
 
       if (error) return { error: error.message };
-      return { success: true };
+      return {
+        success: true,
+        mutation: { type: "delete_event", id: input.id, snapshot: existing ?? null } satisfies MutationRecord,
+      };
     }
 
     case "create_todo": {
@@ -103,7 +135,11 @@ export async function executeTool(
         .single();
 
       if (error) return { error: error.message };
-      return { success: true, todo: data };
+      return {
+        success: true,
+        todo: data,
+        mutation: { type: "create_todo", id: data.id, snapshot: null } satisfies MutationRecord,
+      };
     }
 
     case "find_free_time": {
