@@ -7,6 +7,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@^0.40.0";
 import { createClient } from "jsr:@supabase/supabase-js@^2.57.4";
 import { TOOLS } from "./tools.ts";
 import { executeTool } from "./toolHandlers.ts";
+import type { MutationRecord } from "./toolHandlers.ts";
 
 const CLAUDE_MODEL = "claude-sonnet-4-6";
 const MAX_STORED_MESSAGES = 50;
@@ -126,6 +127,7 @@ serve(async (req: Request) => {
 
   let assistantText = "";
   const MAX_ITERATIONS = 5;
+  const mutations: MutationRecord[] = [];
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await anthropic.messages.create({
@@ -146,6 +148,7 @@ serve(async (req: Request) => {
       const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
         toolUseBlocks.map(async (block) => {
           const result = await executeTool(block, supabase, userData.user.id);
+          if (result.mutation) mutations.push(result.mutation as MutationRecord);
           return {
             type: "tool_result" as const,
             tool_use_id: block.id,
@@ -197,6 +200,7 @@ serve(async (req: Request) => {
       conversation_id: conversationId,
       message: assistantText,
       stop_reason: "end_turn",
+      mutations,
     }),
     {
       status: 200,
