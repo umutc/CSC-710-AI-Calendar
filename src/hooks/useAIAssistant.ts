@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { applyWithUndo } from "../lib/applyWithUndo";
+import { uploadTodoImage } from "../lib/imageUpload";
 import type { MutationRecord } from "../lib/applyWithUndo";
 import { useEvents } from "./useEvents";
 import { useTodos } from "./useTodos";
@@ -33,14 +34,29 @@ export function useAIAssistant(onResponse?: () => void) {
   const { deleteTodo } = useTodos();
 
   const send = useCallback(
-    async (text: string, opts?: { voice?: boolean }) => {
+    async (text: string, opts?: { voice?: boolean; imageFile?: File }) => {
       const trimmed = text.trim();
-      if (!trimmed || loading) return;
+      const hasImage = !!opts?.imageFile;
+      if ((!trimmed && !hasImage) || loading) return;
+
+      let imageUrl: string | null = null;
+      if (hasImage) {
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData?.user?.id;
+        if (!uid) {
+          setError("Not signed in");
+          return;
+        }
+        setLoading(true);
+        imageUrl = await uploadTodoImage(opts!.imageFile!, uid);
+        setLoading(false);
+        if (!imageUrl) return; // upload failed; toast already shown
+      }
 
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
-        content: trimmed,
+        content: trimmed || "📎 (attached image)",
       };
       setMessages((prev) => [...prev, userMsg]);
       setLoading(true);
@@ -51,7 +67,8 @@ export function useAIAssistant(onResponse?: () => void) {
         {
           body: {
             conversation_id: conversationIdRef.current ?? undefined,
-            message: trimmed,
+            message: trimmed || "Read this handwritten note and create relevant todos or events.",
+            image_url: imageUrl,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             voice: opts?.voice ?? false,
           },

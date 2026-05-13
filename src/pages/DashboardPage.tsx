@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Check, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
+import { Calendar, Camera, Check, ImagePlus, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
 import AIAssistant from "../components/ai/AIAssistant";
 import { looksLikeNL } from "../lib/nlDetect";
 import { supabase } from "../lib/supabase";
+import { uploadTodoImage } from "../lib/imageUpload";
 import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
@@ -84,6 +85,8 @@ type TodoDraft = {
   eventEndTime: string;
   eventRecurrence: EventFormState["recurrence"];
   eventWeekdays: number[];
+  image_url: string | null;
+  pendingImageFile: File | null;
 };
 
 type EventFormState = {
@@ -153,6 +156,7 @@ function toDateInputValue(value: string | null): string {
   if (!value) return "";
   return value.slice(0, 10);
 }
+
 
 function toneClasses(tone: string) {
   switch (tone) {
@@ -604,6 +608,7 @@ function TodoRow({
   onDelete,
   onToggle,
   onEditKeyDown,
+  onImageClick,
 }: {
   todo: Todo;
   isEditing: boolean;
@@ -616,6 +621,7 @@ function TodoRow({
   onDelete: (id: string) => void;
   onToggle: (id: string) => void;
   onEditKeyDown: (event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onImageClick: (url: string) => void;
 }) {
   const done = todo.status === "done";
 
@@ -752,6 +758,41 @@ function TodoRow({
                 </div>
               )}
 
+              <div className="flex flex-wrap items-center gap-2">
+                {(draft.pendingImageFile || draft.image_url) && (
+                  <div className="relative">
+                    <img
+                      alt="Preview"
+                      className="h-20 w-20 rounded-xl border border-slate-900/10 object-cover dark:border-white/10"
+                      src={draft.pendingImageFile ? URL.createObjectURL(draft.pendingImageFile) : draft.image_url!}
+                    />
+                    <button
+                      aria-label="Remove image"
+                      className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow hover:bg-red-600"
+                      onClick={() => onDraftChange({ image_url: null, pendingImageFile: null })}
+                      title="Remove image"
+                      type="button"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-900/[0.08] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
+                  <input
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) onDraftChange({ pendingImageFile: file });
+                      event.target.value = "";
+                    }}
+                    type="file"
+                  />
+                  <ImagePlus className="h-3.5 w-3.5" />
+                  {draft.image_url || draft.pendingImageFile ? "Replace image" : "Add image"}
+                </label>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <button
                   className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-700 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
@@ -799,6 +840,16 @@ function TodoRow({
                   </button>
                 </div>
               </div>
+              {todo.image_url && (
+                <button
+                  className="mt-3 block w-full overflow-hidden rounded-2xl border border-slate-900/10 transition hover:opacity-90 dark:border-white/10"
+                  onClick={() => onImageClick(todo.image_url!)}
+                  title="Open attachment"
+                  type="button"
+                >
+                  <img alt="Attachment" className="h-32 w-full object-cover" src={todo.image_url} />
+                </button>
+              )}
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full bg-slate-900/[0.06] px-3 py-1 text-slate-700 dark:bg-white/[0.08] dark:text-slate-300">
                   {formatDue(todo.due_at)}
@@ -842,6 +893,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
   const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
   const { events, createEvent, updateEvent, deleteEvent } = useEvents();
   const { categories } = useCategories();
+  const { user } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -877,6 +929,66 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
   const [newEventWeekdays, setNewEventWeekdays] = useState<number[]>([]);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TodoDraft | null>(null);
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+
+  const stopCameraStream = useCallback(() => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    }
+  }, []);
+
+  const closeCamera = useCallback(() => {
+    stopCameraStream();
+    setCameraOpen(false);
+    setCameraError(null);
+  }, [stopCameraStream]);
+
+  const openCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+      cameraStreamRef.current = stream;
+      setCameraOpen(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown camera error";
+      setCameraError(message);
+      toast.error(`Camera unavailable: ${message}`);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && cameraStreamRef.current) {
+      videoRef.current.srcObject = cameraStreamRef.current;
+    }
+  }, [cameraOpen]);
+
+  useEffect(() => stopCameraStream, [stopCameraStream]);
+
+  const captureFromCamera = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `camera-${Date.now()}.png`, { type: "image/png" });
+      setNewImageFile(file);
+      closeCamera();
+    }, "image/png");
+  }, [closeCamera]);
 
   const activeCount = todos.filter((t) => t.status !== "done").length;
 
@@ -943,6 +1055,11 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
       });
     }
 
+    let imageUrl: string | null = null;
+    if (newImageFile && user?.id) {
+      imageUrl = await uploadTodoImage(newImageFile, user.id);
+    }
+
     const todoId = await createTodo({
       title: trimmedTitle,
       priority: newPriority,
@@ -950,6 +1067,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
       due_at: newDueAt || null,
       linked_event_id: linkedEventId,
       status: linkedEventId ? "scheduled" : undefined,
+      image_url: imageUrl,
     });
     if (todoId) void inferAndPatchTodo(todoId, trimmedTitle);
 
@@ -957,6 +1075,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
     setNewPriority("medium");
     setNewCategoryId(null);
     setNewDueAt("");
+    setNewImageFile(null);
     setNewRecurring(false);
     setNewEventStartTime("09:00");
     setNewEventEndTime("10:00");
@@ -986,6 +1105,8 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         eventEndTime: event ? event.end_at.slice(11, 16) : "10:00",
         eventRecurrence: recurrence,
         eventWeekdays: weekdays,
+        image_url: todo.image_url,
+        pendingImageFile: null,
       });
     } else {
       setDraft({
@@ -997,6 +1118,8 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         eventEndTime: "10:00",
         eventRecurrence: "none",
         eventWeekdays: [],
+        image_url: todo.image_url,
+        pendingImageFile: null,
       });
     }
   }
@@ -1037,11 +1160,18 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
       });
     }
 
+    let nextImageUrl = draft.image_url;
+    if (draft.pendingImageFile && user?.id) {
+      const uploaded = await uploadTodoImage(draft.pendingImageFile, user.id);
+      if (uploaded) nextImageUrl = uploaded;
+    }
+
     await updateTodo(editingTodoId, {
       title: trimmedTitle,
       due_at: draft.due_at || null,
       priority: draft.priority,
       category_id: draft.category_id,
+      image_url: nextImageUrl,
     });
 
     handleEditCancel();
@@ -1072,7 +1202,8 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
   }
 
   return (
-    <section className="flex h-full flex-col">
+    <>
+      <section className="flex h-full flex-col">
       <div className={`panel-surface flex h-full flex-col ${mobile ? "rounded-t-[2rem] p-5" : "p-5"}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -1139,6 +1270,49 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
                 type="submit"
               >
                 Add todo
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              {newImageFile && (
+                <div className="relative">
+                  <img
+                    alt="Preview"
+                    className="h-16 w-16 rounded-xl border border-slate-900/10 object-cover dark:border-white/10"
+                    src={URL.createObjectURL(newImageFile)}
+                  />
+                  <button
+                    aria-label="Remove image"
+                    className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow hover:bg-red-600"
+                    onClick={() => setNewImageFile(null)}
+                    title="Remove image"
+                    type="button"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <label className="flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-900/10 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-900/[0.04] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-white/10">
+                <input
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) setNewImageFile(file);
+                    event.target.value = "";
+                  }}
+                  type="file"
+                />
+                <ImagePlus className="h-3.5 w-3.5" />
+                {newImageFile ? "Replace image" : "Attach handwritten note"}
+              </label>
+              <button
+                className="flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-900/10 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-900/[0.04] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-white/10"
+                onClick={openCamera}
+                type="button"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                Take photo
               </button>
             </div>
 
@@ -1281,6 +1455,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
                 onDraftChange={(patch) => setDraft((current) => (current ? { ...current, ...patch } : current))}
                 onEditKeyDown={handleEditKeyDown}
                 onEditStart={handleEditStart}
+                onImageClick={setLightboxUrl}
                 onSave={handleEditSave}
                 onToggle={toggleStatus}
                 todo={todo}
@@ -1297,6 +1472,61 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         </div>
       </div>
     </section>
+    {cameraOpen && (
+      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 p-4">
+        <video
+          ref={videoRef}
+          autoPlay
+          className="max-h-[70vh] max-w-[90vw] rounded-2xl shadow-2xl"
+          muted
+          playsInline
+        />
+        {cameraError && (
+          <p className="mt-3 max-w-md rounded-xl bg-red-500/20 px-4 py-2 text-center text-sm text-red-100">
+            {cameraError}
+          </p>
+        )}
+        <div className="mt-5 flex gap-3">
+          <button
+            className="flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-cyan-700"
+            onClick={captureFromCamera}
+            type="button"
+          >
+            <Camera className="h-4 w-4" />
+            Capture
+          </button>
+          <button
+            className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
+            onClick={closeCamera}
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
+    {lightboxUrl && (
+      <div
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-6"
+        onClick={() => setLightboxUrl(null)}
+      >
+        <img
+          alt="Attachment"
+          className="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+          src={lightboxUrl}
+        />
+        <button
+          aria-label="Close attachment"
+          className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white backdrop-blur hover:bg-white/20"
+          onClick={() => setLightboxUrl(null)}
+          type="button"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+    )}
+    </>
   );
 }
 

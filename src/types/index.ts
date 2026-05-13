@@ -37,6 +37,7 @@ export interface Todo {
   category_id: UUID | null;
   status: TodoStatus;
   linked_event_id: UUID | null;
+  image_url: string | null;
   created_by_ai: boolean;
   created_at: string;
   updated_at: string;
