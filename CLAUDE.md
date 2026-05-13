@@ -68,29 +68,43 @@ never exposed to the browser — only the Edge Function sees it.
 - **Voice:** Web Speech API (`SpeechRecognition` + `SpeechSynthesis`) — Chrome/Edge only; warning banner in other browsers
 - **Hosting:** GitHub Pages, auto-deployed on push to `main` (`.github/workflows/deploy-pages.yml`)
 
-### Source structure (from the tech doc)
+### Source structure (actual as of Sprint 3 close, 2026-05-13)
 
 ```
 src/
-├── lib/              # supabase client, date utils, rrule helpers, constants
+├── lib/              # supabase client, applyWithUndo, imageUpload, nlDetect,
+│                     # priorityInference, rruleHelpers, schemas/, themeUtils
 ├── contexts/         # AuthContext, EventContext, TodoContext, ThemeContext
-├── hooks/            # useAuth, useEvents, useTodos, useAIAssistant, useVoice
-├── pages/            # LandingPage, LoginPage, RegisterPage, DashboardPage, SettingsPage
+├── hooks/            # useAuth, useEvents, useTodos, useCategories, useHolidays,
+│                     # useAIAssistant, useVoice, useTheme
+├── pages/            # LandingPage, LoginPage, DashboardPage, SettingsPage
 ├── components/
-│   ├── common/       # Button, Input, Modal, ProtectedRoute, Navbar, ThemeToggle
-│   ├── dashboard/    # Dashboard, TodoPanel, TodoItem, TodoForm
-│   ├── calendar/     # CalendarView, EventModal, EventForm
+│   ├── common/       # Modal, ProtectedRoute, ThemeToggle, BrowserSupportBanner
+│   ├── calendar/     # CalendarView, EventModal, EventForm, HolidayModal
 │   ├── ai/           # AIAssistant, VoiceButton, ConversationBubble
-│   └── settings/     # Settings, CategoryManager
+│   └── settings/     # CategoryManager
 ├── types/            # TypeScript interfaces (index.ts)
 └── styles/           # index.css (Tailwind imports)
+```
 
+Note: Sprint 3 kept todo + dashboard layout inline in `pages/DashboardPage.tsx` rather than
+breaking them into a `components/dashboard/` subtree as originally planned. Splitting is
+deferred to Phase 4 polish.
+
+```
 supabase/
+├── config.toml
 ├── migrations/
-│   └── 001_initial_schema.sql
+│   ├── 001_initial_schema.sql
+│   ├── 002_todo_attachments.sql      # adds todos.image_url + todo-attachments bucket
+│   └── 003_todos_realtime.sql        # restores todos in supabase_realtime publication
 └── functions/
-    └── ai-assistant/
-        └── index.ts   # Deno + Claude SDK
+    ├── ai-assistant/
+    │   ├── index.ts        # Deno + Claude SDK, agentic tool loop
+    │   ├── tools.ts        # Zod schemas + JSON Schema mirrors for 7 tools
+    │   └── toolHandlers.ts # tool→DB mutation resolvers
+    └── infer-todo/
+        └── index.ts        # cheap priority/category inference for plain todos
 ```
 
 ### Key routes

@@ -21,9 +21,12 @@
 - Voice control in Chrome/Edge (Web Speech API) — press the mic, speak, and Claude can create,
   move, and summarise events hands-free.
 - 30-second Undo toast on every AI action.
-- Browser notifications for upcoming events.
+- **Image attachment** — attach a photo or live camera capture to a todo as a visual
+  reference, OR let the AI panel OCR a handwritten note and convert it into structured
+  todos and events (Claude Sonnet 4.6 vision).
+- **Weekly summary** — one-click "Summarize this week" pulls a markdown digest of upcoming
+  events and pending todos.
 - Dark/light theme that follows `prefers-color-scheme` with a manual toggle.
-- **Try Demo** button on the login screen loads a pre-seeded account for instant exploration.
 
 ## Stack
 
@@ -110,10 +113,13 @@ sprint breakdown. High-level plan:
 
 1. **Sprint 0** (Apr 22 – 24) — foundations (repo, Supabase, CI)
 2. **Sprint 1** (Apr 25 – May 1) — auth, calendar, todos (no AI)
-3. **Sprint 2** (May 2 – 8) — Claude Edge Function + NL parse + Undo toast
-4. **Sprint 3** (May 9 – 12) — voice, auto-scheduling, polish, E2E tests
-5. **May 13** — Presentation
-6. **May 14 – 19** — bug fixes + final report
+3. **Sprint 2** (May 2 – 8) — Claude Edge Function + NL parse + Undo toast + drag-drop +
+   priority/category inference + holidays
+4. **Sprint 3** (May 9 – 13) — voice (button + transcript + TTS), image attachment + Claude
+   vision OCR, markdown rendering, weekly summary UI, priority-keyword inference
+5. **May 13** — Presentation; Phase 4 polish window opens (mobile responsive, notifications,
+   cross-tab realtime, additional E2E + integration tests, doc refresh)
+6. **May 14 – 19** — Phase 4 polish, bug fixes, final report
 7. **May 20** — submission
 
 ## License

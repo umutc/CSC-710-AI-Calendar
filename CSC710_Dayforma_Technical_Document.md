@@ -400,12 +400,12 @@ event: Dentist · Apr 23 15:00").
 
 ### 5.7 Settings (`/settings`)
 
-Tabs:
-1. **Profile** — display name, email (read-only), timezone (auto-detected, editable),
-   theme preference
-2. **Categories** — list with colour swatches; create / rename / recolour / delete
-3. **AI** — list of recent `ai_conversations`; ability to clear history
-4. **Account** — change password, delete account (cascades via FK)
+v1 ships with a single **Categories** tab — list with colour swatches; create / rename /
+recolour / delete; reflected immediately on every event and todo badge.
+
+The originally-planned Profile, AI history, and Account tabs were scoped out and are tracked
+as future enhancements (Section 20). Theme preference is exposed inline on the dashboard
+header via `ThemeToggle`.
 
 ### 5.8 Profile (inline on Settings)
 
@@ -551,17 +551,13 @@ Every user-scoped table enforces `user_id = auth.uid()` on SELECT, INSERT (via `
 UPDATE, and DELETE. The Edge Function calls Supabase with the user's JWT, so the same RLS
 applies to server-side writes — we never rely on a service-role key for user data.
 
-### 6.5 Demo Seed
+### 6.5 Demo Seed *(removed from v1)*
 
-A separate idempotent seed script (`supabase/seed/demo.sql`, to be written in Sprint 2) populates
-the demo account with:
-- Three categories (already present via trigger)
-- Six events distributed across the current week
-- Five pending todos with varying priorities
-- One completed todo
-- One pre-baked AI conversation showing a sample interaction
-
-The seed runs via `supabase db execute` before the presentation.
+A shared demo account was originally planned for instant-exploration access. The team
+decided on 2026-05-13 to demo with personal accounts instead, so the shared demo
+account, the corresponding seed script, and the "Try Demo" button were dropped. New
+users sign up directly; the `handle_new_user` trigger seeds Work / Personal / Health
+categories so a fresh account is immediately usable.
 
 ---
 
@@ -621,11 +617,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 ```
 
-### 7.4 Demo Account
+### 7.4 Demo Account *(removed from v1)*
 
-- Pre-provisioned: `demo@dayforma.app` / password in a team-only secret.
-- `signInDemo()` calls `signInWithPassword` with those credentials.
-- Displays a persistent `<DemoBanner>` warning that the account resets.
+See §6.5. The shared demo account and `DemoBanner` were dropped on 2026-05-13. The
+landing and login flows no longer surface a "Try Demo" button.
 
 ---
 
@@ -785,16 +780,23 @@ end_at="2026-04-28T13:00:00Z", category_name="Personal")`
 
 **Assistant text:** `Scheduled "Lunch with Mom" for Tue Apr 28 at 12 p.m.`
 
-### 10.5 Auto-Scheduling Algorithm
+### 10.5 Auto-Scheduling Algorithm — *shipped Sprint 3*
 
-`find_free_time` receives a range and a duration. The Edge Function:
-1. Fetches all events in `[search_from, search_to]` for the user, sorted by `start_at`.
-2. Subtracts events from the window, yielding a list of gaps.
-3. Filters gaps by preferences (working hours, minimum buffer after the previous event, avoid
-   evenings, minimum length ≥ required duration).
-4. Returns the top three candidate slots ranked by proximity to the requested date and minimal
-   calendar disruption.
-5. Claude then decides which to pick or asks the user.
+`find_free_time` receives a `date`, `duration_minutes`, optional `after_time` / `before_time`,
+and a user JWT. The Edge Function:
+1. Fetches all events in `[date + after_time, date + before_time]` for the user, sorted by
+   `start_at`.
+2. Walks a cursor through the window; emits any gap whose length is at least
+   `duration_minutes`.
+3. Returns the full list of candidate slots (start + end timestamps).
+4. Claude picks one or asks the user to choose.
+
+Working-hours / evening filters and ranking by proximity were de-scoped from v1 — the LLM
+handles "afternoon" / "morning" semantically by passing the appropriate `after_time` and
+`before_time` to the tool. A regression bug where the algorithm could emit a slot that
+overlaps the next event when the cursor sits inside a half-open gap is tracked as #79
+(deferred to Phase 4 polish; user-facing impact is masked because Claude reasons about the
+returned slot against existing events before proposing it).
 
 ### 10.6 Priority / Category Inference
 
@@ -802,9 +804,10 @@ When the user quickly adds a todo without picking priority/category, the Edge Fu
 Claude (with a short, cached sub-prompt) to propose those fields. The response is a structured
 JSON (not a tool call — cheaper) that the client applies as a patch.
 
-### 10.7 Weekly Summary
+### 10.7 Weekly Summary — *shipped Sprint 3*
 
-The `summarize_week` tool reads events + todos for the given week and returns a markdown block:
+The `summarize_week` tool reads events + todos for the given week and Claude composes a
+markdown summary:
 
 > **Week of Apr 20–26**
 >
@@ -814,7 +817,11 @@ The `summarize_week` tool reads events + todos for the given week and returns a 
 > - Two todos overdue: "Submit assignment", "Call plumber".
 > - Suggested focus block: Wednesday 10:00–12:00.
 
-Rendered inside the AI assistant panel.
+The summary is rendered inside the AI assistant panel through `react-markdown` +
+`remark-gfm`, so headings, bullet/numbered lists, **bold**, *italic*, tables, code blocks,
+blockquotes, links, and horizontal rules all render natively. A Sparkles button in the AI
+panel header and a "Summarize this week" chip on the empty-state both trigger the call with
+one click.
 
 ### 10.8 Voice Mode
 
@@ -862,6 +869,30 @@ async function applyWithUndo(action: Action) {
 - For deletes: soft-delete via a `deleted_at` column would be cleaner; for v1 we keep the prior
   row in memory and re-insert with a new id if Undo fires.
 
+### 10.13 Image Attachment + Claude Vision — *shipped Sprint 3*
+
+Two complementary paths, both backed by the public-read `todo-attachments` Supabase Storage
+bucket (writes RLS-gated by `auth.uid()/<file>`):
+
+**Manual attach on the dashboard todo form.** The user can either pick a file or open a
+live camera modal (`navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }})`,
+`<canvas>` frame grab → PNG `Blob`). The resulting public URL is persisted to
+`todos.image_url`. Each todo row renders a thumbnail when present; clicking it opens a
+fullscreen lightbox. Edit mode supports replace / remove with a pending-file buffer.
+
+**AI vision in the chat panel.** The same attach + camera buttons sit next to the mic in the
+AI panel input row. On send, the file uploads to the bucket and the resulting URL is passed
+to the Edge Function as `image_url`. The Edge Function builds the user message with a
+`{ type: "image", source: { type: "url", url: ... } }` content block; Claude Sonnet 4.6's
+vision capability OCRs the image and calls the appropriate tools (`create_todo`,
+`create_event`) to materialise the content. The handwritten-note demo (see
+`docs/screenshots/regression_2026-05-13/ai_vision_demo.gif`) turns a 4-bullet note into 3
+todos + 1 event in ≈10 seconds.
+
+Both paths share `src/lib/imageUpload.ts` for the upload helper. The system prompt instructs
+Claude to OCR first, default to `create_todo` for ambiguous bullets, and summarise what it
+extracted at the end of its reply.
+
 ---
 
 ## 11. Realtime Sync
@@ -904,54 +935,56 @@ graph TB
     ProtectedRoute --> DashboardPage
     ProtectedRoute --> SettingsPage
 
-    DashboardPage --> Header
-    DashboardPage --> ViewSwitcher
     DashboardPage --> CalendarView
     DashboardPage --> TodoPanel
+    DashboardPage --> EventModal
+    DashboardPage --> HolidayModal
     DashboardPage --> AIAssistant
-    DashboardPage --> DemoBanner
 
     CalendarView --> FullCalendar
-    CalendarView --> EventModal
-
-    TodoPanel --> QuickAdd
-    TodoPanel --> TodoItem
-    TodoPanel --> TodoItem2
-    TodoPanel --> TodoModal
-    TodoPanel --> VoiceButton
-    TodoPanel --> AIScheduleButton
 
     AIAssistant --> ConversationBubble
-    AIAssistant --> InputBar
+    AIAssistant --> VoiceButton
 
-    SettingsPage --> ProfileTab
-    SettingsPage --> CategoriesTab
-    SettingsPage --> AITab
-    SettingsPage --> AccountTab
+    SettingsPage --> CategoryManager
 ```
+
+Sprint 3 kept `TodoPanel`, the dashboard header, and the view switcher as inline children of
+`pages/DashboardPage.tsx` rather than extracting them under `components/dashboard/`. The
+`<DemoBanner>` that originally appeared here was removed alongside the demo account (§6.5,
+§7.4). `<AIScheduleButton>` was folded into the inline AI panel entry-points.
 
 ### 12.2 Key Component Specifications
 
 - **`<CalendarView>`** — memoised around `events` array; recomputes when realtime pushes an
   update. Debounces scroll-driven range changes (avoid double-fetching events).
-- **`<TodoPanel>`** — virtual list (react-window if counts exceed 200 in future); each todo row
-  keyboard-focusable; drag handle on hover.
-- **`<EventModal>`** — `react-hook-form` + zod resolver; trapped focus; Escape closes; Cmd+Enter
-  submits.
-- **`<AIAssistant>`** — controlled via `useAIAssistant()` hook. Streams partial text responses
-  (if later we add streaming — v1 is non-streaming).
-- **`<VoiceButton>`** — press-and-hold with visual waveform; fallback to tap-to-toggle; shows
-  `aria-live` transcript.
-- **`<ThemeToggle>`** — Writes `theme` to localStorage and toggles `<html data-theme="...">`;
+- **`<TodoPanel>`** (inline in `DashboardPage`) — list rendered through `TodoRow`; each row
+  is keyboard-focusable and draggable onto the calendar via FullCalendar's external-source
+  contract.
+- **`<EventModal>`** — `react-hook-form` + zod resolver; trapped focus; Escape closes;
+  Cmd+Enter submits.
+- **`<HolidayModal>`** — opens when the user clicks a US public-holiday entry on the
+  calendar; renders the holiday name, date, type, and description.
+- **`<AIAssistant>`** — controlled via `useAIAssistant()` hook. Non-streaming text response
+  rendered through `react-markdown` + `remark-gfm`. Header includes a Sparkles trigger for
+  the weekly summary; input row pairs the mic with attach + camera buttons.
+- **`<VoiceButton>`** — press-and-hold (`onPointerDown` / `onPointerUp` / `onPointerLeave`)
+  with a red recording state; the parent renders the live interim transcript in an
+  `aria-live` region.
+- **`<ConversationBubble>`** — assistant messages flow through the markdown renderer with
+  Tailwind-styled components for paragraphs, lists, tables, code, links, blockquotes, and
+  hr; user messages stay as plain whitespace-pre-wrap.
+- **`<ThemeToggle>`** — writes `theme` to localStorage and toggles `<html data-theme="…">`;
   respects `prefers-color-scheme` when `theme === "system"`.
-- **`<ProtectedRoute>`** — redirects unauthenticated users; renders spinner during session
-  hydration.
-- **`<DemoBanner>`** — visible only when `user.email === "demo@dayforma.app"`; includes "Sign
-  out of demo" shortcut.
+- **`<ProtectedRoute>`** — redirects unauthenticated users; renders a spinner during
+  session hydration.
 
 ### 12.3 Source File Structure
 
-See Section 2 of `CLAUDE.md` and the repo root `README.md`. Exact tree:
+Actual layout at Sprint 3 close (2026-05-13). The originally-planned `components/dashboard/`
+subtree never materialised — the todo panel + dashboard header stayed inline in
+`pages/DashboardPage.tsx`. The shared demo account and its `DemoBanner` were removed; the
+Settings sub-tabs were de-scoped to a single Categories tab.
 
 ```
 src/
@@ -966,8 +999,11 @@ src/
 │   ├── useAuth.ts
 │   ├── useEvents.ts
 │   ├── useTodos.ts
+│   ├── useCategories.ts
+│   ├── useHolidays.ts
 │   ├── useAIAssistant.ts
-│   └── useVoice.ts
+│   ├── useVoice.ts
+│   └── useTheme.ts
 ├── pages/
 │   ├── LandingPage.tsx
 │   ├── LoginPage.tsx
@@ -975,50 +1011,40 @@ src/
 │   └── SettingsPage.tsx
 ├── components/
 │   ├── common/
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
 │   │   ├── Modal.tsx
 │   │   ├── ProtectedRoute.tsx
-│   │   ├── ThemeToggle.tsx
-│   │   └── DemoBanner.tsx
-│   ├── dashboard/
-│   │   ├── Dashboard.tsx
-│   │   ├── Header.tsx
-│   │   ├── ViewSwitcher.tsx
-│   │   ├── TodoPanel.tsx
-│   │   ├── TodoItem.tsx
-│   │   ├── QuickAdd.tsx
-│   │   └── TodoModal.tsx
+│   │   └── ThemeToggle.tsx
 │   ├── calendar/
 │   │   ├── CalendarView.tsx
 │   │   ├── EventModal.tsx
-│   │   └── EventForm.tsx
+│   │   ├── EventForm.tsx
+│   │   └── HolidayModal.tsx
 │   ├── ai/
 │   │   ├── AIAssistant.tsx
-│   │   ├── VoiceButton.tsx
 │   │   ├── ConversationBubble.tsx
-│   │   └── AIScheduleButton.tsx
+│   │   └── VoiceButton.tsx
 │   └── settings/
-│       ├── Settings.tsx
-│       ├── CategoryManager.tsx
-│       ├── ProfileTab.tsx
-│       ├── AITab.tsx
-│       └── AccountTab.tsx
+│       └── CategoryManager.tsx
 ├── lib/
+│   ├── applyWithUndo.ts
+│   ├── imageUpload.ts
+│   ├── nlDetect.ts
+│   ├── priorityInference.ts
+│   ├── rruleHelpers.ts
+│   ├── schemas/
+│   │   └── event.ts
 │   ├── supabase.ts
-│   ├── date-utils.ts
-│   ├── rrule-helpers.ts
-│   └── constants.ts
+│   └── themeUtils.ts
 ├── types/
 │   └── index.ts
 └── styles/
     └── index.css
 
 supabase/
+├── config.toml
 ├── migrations/
-│   └── 001_initial_schema.sql
-├── seed/
-│   └── demo.sql
+│   ├── 001_initial_schema.sql
+│   └── 002_todo_attachments.sql
 └── functions/
     └── ai-assistant/
         └── index.ts
@@ -1089,6 +1115,7 @@ export interface Todo {
   category_id: UUID | null;
   status: TodoStatus;
   linked_event_id: UUID | null;
+  image_url: string | null;   // added in migration 002_todo_attachments
   created_by_ai: boolean;
   created_at: string;
   updated_at: string;
@@ -1138,13 +1165,20 @@ unit/schemas.test.ts`.
 
 ---
 
-## 14. Responsive Design
+## 14. Responsive Design *(Phase 4 — deferred from Sprint 3)*
 
-### 14.1 Breakpoints
+The original Sprint 3 plan included responsive breakpoints down to mobile (Agenda view by
+default, bottom-drawer todo panel, FAB-launched AI panel). The team formally deferred this
+to the Phase 4 polish window (May 14–19) so the May 13 demo could ship the highest-signal
+features instead (image attachment + AI vision, weekly summary UI, voice). The desktop
+layout works at any width ≥ `lg`; below that the user can still operate the app but the
+layout is not optimised. Tracking issue: #38.
+
+### 14.1 Breakpoints (target — not yet implemented)
 
 Tailwind defaults: `sm` 640 px · `md` 768 px · `lg` 1024 px · `xl` 1280 px.
 
-### 14.2 Layout Adaptations
+### 14.2 Layout Adaptations (target)
 
 | Viewport | Layout |
 |----------|--------|
@@ -1152,13 +1186,13 @@ Tailwind defaults: `sm` 640 px · `md` 768 px · `lg` 1024 px · `xl` 1280 px.
 | `md` | Tabs: Calendar / Todos with slide transition |
 | < `md` | Calendar default view switches to Agenda; todo panel as bottom drawer |
 
-### 14.3 Mobile Calendar
+### 14.3 Mobile Calendar (target)
 
 - FullCalendar's `listWeek` view.
 - Events rendered as cards with category colour stripe.
 - Swipe left/right to change week.
 
-### 14.4 Voice Button Prominence
+### 14.4 Voice Button Prominence (target)
 
 Mic button is fixed at bottom-right on mobile (FAB), bottom-left of the todo panel on desktop.
 Radius: 56 px · accent colour matches theme.
