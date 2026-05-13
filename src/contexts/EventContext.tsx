@@ -88,6 +88,7 @@ export interface EventContextValue {
   createEvent: (input: CreateEventInput) => Promise<string | null>;
   updateEvent: (id: string, input: UpdateEventInput) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
+  refreshEvents: () => Promise<void>;
 }
 
 export const EventContext = createContext<EventContextValue | null>(null);
@@ -232,6 +233,18 @@ export function EventProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const refreshEvents = useCallback(async () => {
+    if (!user?.id) return;
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("start_at", { ascending: true });
+    if (!error) {
+      dispatch({ type: "SET_EVENTS", payload: (data ?? []) as Event[] });
+    }
+  }, [user?.id]);
+
   const deleteEvent = useCallback(
     async (id: string): Promise<void> => {
       const existing = eventsRef.current.find((e) => e.id === id);
@@ -260,8 +273,9 @@ export function EventProvider({ children }: { children: ReactNode }) {
       createEvent,
       updateEvent,
       deleteEvent,
+      refreshEvents,
     }),
-    [state.events, state.loading, state.error, createEvent, updateEvent, deleteEvent]
+    [state.events, state.loading, state.error, createEvent, updateEvent, deleteEvent, refreshEvents]
   );
 
   return <EventContext.Provider value={value}>{children}</EventContext.Provider>;

@@ -4,6 +4,7 @@ import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { Calendar, Check, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
 import AIAssistant from "../components/ai/AIAssistant";
+import { looksLikeNL } from "../lib/nlDetect";
 import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
@@ -804,7 +805,7 @@ function TodoRow({
   );
 }
 
-function TodoPanel({ mobile = false }: { mobile?: boolean }) {
+function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteToAI?: (msg: string) => void }) {
   const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
   const { events, createEvent, updateEvent, deleteEvent } = useEvents();
   const [sortMode, setSortMode] = useState<SortMode>("priority");
@@ -851,6 +852,12 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
   async function handleCreateTodo() {
     const trimmedTitle = newTitle.trim();
     if (!trimmedTitle) return;
+
+    if (looksLikeNL(trimmedTitle) && onRouteToAI) {
+      setNewTitle("");
+      onRouteToAI(trimmedTitle);
+      return;
+    }
 
     let linkedEventId: string | null = null;
 
@@ -1021,12 +1028,19 @@ function TodoPanel({ mobile = false }: { mobile?: boolean }) {
           onSubmit={handleCreateSubmit}
         >
           <div className="grid gap-3">
-            <input
-              className="w-full rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
-              onChange={(event) => setNewTitle(event.target.value)}
-              placeholder="Add a todo title"
-              value={newTitle}
-            />
+            <div>
+              <input
+                className="w-full rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
+                onChange={(event) => setNewTitle(event.target.value)}
+                placeholder="Add a todo title"
+                value={newTitle}
+              />
+              {onRouteToAI && looksLikeNL(newTitle) && (
+                <p className="mt-1.5 px-1 text-xs text-violet-500 dark:text-violet-400">
+                  ✨ Looks like an event — press Enter to send to AI
+                </p>
+              )}
+            </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <select
                 className="w-full cursor-pointer rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
@@ -1217,6 +1231,12 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [aiQueuedMessage, setAiQueuedMessage] = useState<string | undefined>();
+
+  function openAIWithMessage(msg: string) {
+    setAiQueuedMessage(msg);
+    setAiPanelOpen(true);
+  }
   const [eventComposerOpen, setEventComposerOpen] = useState(false);
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
@@ -1389,7 +1409,7 @@ export default function DashboardPage() {
             onAddEvent={handleAddEvent}
           />
           <aside className="hidden lg:block">
-            <TodoPanel />
+            <TodoPanel onRouteToAI={openAIWithMessage} />
           </aside>
         </div>
 
@@ -1458,7 +1478,7 @@ export default function DashboardPage() {
               type="button"
             />
           </div>
-          <TodoPanel mobile />
+          <TodoPanel mobile onRouteToAI={openAIWithMessage} />
         </div>
       </div>
 
@@ -1475,7 +1495,7 @@ export default function DashboardPage() {
         Schedule with AI
       </button>
 
-      <AIAssistant open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
+      <AIAssistant open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} queuedMessage={aiQueuedMessage} />
     </div>
   );
 }

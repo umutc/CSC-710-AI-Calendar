@@ -7,11 +7,13 @@ import {
 } from "react";
 import { Bot, RotateCcw, Send, X } from "lucide-react";
 import { useAIAssistant, type ChatMessage } from "../../hooks/useAIAssistant";
+import { useEvents } from "../../hooks/useEvents";
 import ConversationBubble from "./ConversationBubble";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  queuedMessage?: string;
 }
 
 function ThinkingBubble() {
@@ -153,8 +155,17 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
   );
 }
 
-export default function AIAssistant({ open, onClose }: Props) {
-  const { messages, loading, error, send, clear } = useAIAssistant();
+export default function AIAssistant({ open, onClose, queuedMessage }: Props) {
+  const { refreshEvents } = useEvents();
+  const { messages, loading, error, send, clear } = useAIAssistant(refreshEvents);
+
+  const sentRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (open && queuedMessage && queuedMessage !== sentRef.current) {
+      sentRef.current = queuedMessage;
+      void send(queuedMessage);
+    }
+  }, [open, queuedMessage, send]);
 
   const handleKeyDown = useCallback(
     (e: globalThis.KeyboardEvent) => {
