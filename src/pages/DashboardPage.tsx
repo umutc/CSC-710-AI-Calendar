@@ -17,7 +17,11 @@ import CalendarView from "../components/calendar/CalendarView";
 import EventModal from "../components/calendar/EventModal";
 import HolidayModal from "../components/calendar/HolidayModal";
 import ThemeToggle from "../components/common/ThemeToggle";
+import NotificationsToggle, {
+  type NotificationPermissionState,
+} from "../components/common/NotificationsToggle";
 import BrowserSupportBanner from "../components/common/BrowserSupportBanner";
+import { useEventReminders } from "../hooks/useEventReminders";
 import type { EventInput } from "@fullcalendar/core";
 import { Draggable } from "@fullcalendar/interaction";
 import type { EventFormValues } from "../lib/schemas/event";
@@ -245,11 +249,13 @@ function DashboardHeader({
   onLogout,
   onOpenSettings,
   onOpenTodos,
+  onNotificationPermissionChange,
 }: {
   displayName: string;
   onLogout: () => void;
   onOpenSettings: () => void;
   onOpenTodos: () => void;
+  onNotificationPermissionChange: (permission: NotificationPermissionState) => void;
 }) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-900/10 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
@@ -293,6 +299,7 @@ function DashboardHeader({
           >
             <Settings className="h-5 w-5" />
           </button>
+          <NotificationsToggle onPermissionChange={onNotificationPermissionChange} />
           <ThemeToggle />
           <button
             className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-red-400"
@@ -1551,6 +1558,19 @@ export default function DashboardPage() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiQueuedMessage, setAiQueuedMessage] = useState<string | undefined>();
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermissionState>(() => {
+      if (typeof window === "undefined") return "unsupported";
+      if (typeof Notification === "undefined") return "unsupported";
+      return Notification.permission;
+    });
+  const handleNotificationPermissionChange = useCallback(
+    (next: NotificationPermissionState) => {
+      setNotificationPermission(next);
+    },
+    []
+  );
+  useEventReminders(events, notificationPermission);
 
   function openAIWithMessage(msg: string) {
     setAiQueuedMessage(msg);
@@ -1737,6 +1757,7 @@ export default function DashboardPage() {
         onLogout={handleLogout}
         onOpenSettings={() => navigate("/settings")}
         onOpenTodos={() => setMobileDrawerOpen(true)}
+        onNotificationPermissionChange={handleNotificationPermissionChange}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
