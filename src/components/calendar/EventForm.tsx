@@ -316,6 +316,7 @@ function EventForm({
             { label: "15m before", value: 15 },
             { label: "30m before", value: 30 },
             { label: "1h before", value: 60 },
+            { label: "1d before", value: 1440 },
           ].map((opt) => {
             const isSelected = watch("reminder_offset_minutes") === opt.value;
             return (
