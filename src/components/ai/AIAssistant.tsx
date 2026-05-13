@@ -5,7 +5,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import { Bot, Camera, ImagePlus, RotateCcw, Send, X } from "lucide-react";
+import { Bot, Camera, ImagePlus, RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { useAIAssistant, type ChatMessage } from "../../hooks/useAIAssistant";
 import { useEvents } from "../../hooks/useEvents";
 import { useVoice } from "../../hooks/useVoice";
@@ -145,6 +145,16 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
         </div>
         <div className="flex items-center gap-1">
           <button
+            aria-label="Summarize this week"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-violet-300"
+            disabled={loading}
+            onClick={() => void onSend("Summarize this week.")}
+            title="Summarize this week"
+            type="button"
+          >
+            <Sparkles size={15} />
+          </button>
+          <button
             aria-label="Clear conversation"
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
             onClick={onClear}
@@ -176,6 +186,23 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Try "Add a gym session tomorrow at 7am" or "What's on my schedule this week?"
             </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <button
+                className="flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50"
+                onClick={() => void onSend("Summarize this week.")}
+                type="button"
+              >
+                <Sparkles size={12} />
+                Summarize this week
+              </button>
+              <button
+                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                onClick={() => void onSend("What's on my calendar this week?")}
+                type="button"
+              >
+                What's on my calendar?
+              </button>
+            </div>
           </div>
         )}
 
