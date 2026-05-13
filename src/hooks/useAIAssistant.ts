@@ -15,11 +15,13 @@ interface AIResponse {
 
 const MAX_DISPLAY = 40; // 20 turns × 2 messages
 
-export function useAIAssistant() {
+export function useAIAssistant(onResponse?: () => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const conversationIdRef = useRef<string | null>(null);
+  const onResponseRef = useRef(onResponse);
+  onResponseRef.current = onResponse;
 
   const send = useCallback(
     async (text: string) => {
@@ -41,6 +43,7 @@ export function useAIAssistant() {
           body: {
             conversation_id: conversationIdRef.current ?? undefined,
             message: trimmed,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           },
         }
       );
@@ -62,6 +65,7 @@ export function useAIAssistant() {
         content: data.message,
       };
       setMessages((prev) => [...prev, assistantMsg].slice(-MAX_DISPLAY));
+      onResponseRef.current?.();
     },
     [loading]
   );

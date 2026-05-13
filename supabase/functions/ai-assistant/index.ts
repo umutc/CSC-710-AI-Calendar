@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@^0.40.0";
 import { createClient } from "jsr:@supabase/supabase-js@^2.57.4";
 import { TOOLS } from "./tools.ts";
+import { executeTool } from "./toolHandlers.ts";
 
 const CLAUDE_MODEL = "claude-sonnet-4-6";
 const MAX_STORED_MESSAGES = 50;
@@ -28,11 +29,12 @@ type StoredMessage = {
 interface AssistantRequest {
   conversation_id?: string;
   message: string;
+  timezone?: string;
 }
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -88,31 +90,81 @@ serve(async (req: Request) => {
     }
   }
 
-  // ── 3. Call Claude with cached system prompt + conversation history ───────────
+  // ── 3. Call Claude — agentic loop (max 5 iterations) ────────────────────────
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-  const claudeResponse = await anthropic.messages.create({
-    model: CLAUDE_MODEL,
-    max_tokens: 1024,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    tools: TOOLS,
-    messages: [
-      ...history,
-      { role: "user", content: body.message },
-    ],
-  });
+  const tz = body.timezone ?? "UTC";
+  const nowDate = new Date();
 
-  // Extract text from response (tool execution loop added in next task)
-  const assistantText = claudeResponse.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
+  // Compute UTC offset for the user's timezone (accounts for DST)
+  const localMs = new Date(nowDate.toLocaleString("en-US", { timeZone: tz })).getTime();
+  const utcMs = new Date(nowDate.toLocaleString("en-US", { timeZone: "UTC" })).getTime();
+  const diffMins = Math.round((localMs - utcMs) / 60000);
+  const sign = diffMins >= 0 ? "+" : "-";
+  const absMins = Math.abs(diffMins);
+  const tzOffset = `${sign}${String(Math.floor(absMins / 60)).padStart(2, "0")}:${String(absMins % 60).padStart(2, "0")}`;
+
+  const nowLocal = nowDate.toLocaleString("en-US", { timeZone: tz, hour12: false });
+
+  const systemBlocks = [
+    {
+      type: "text" as const,
+      text: SYSTEM_PROMPT,
+      cache_control: { type: "ephemeral" as const },
+    },
+    {
+      type: "text" as const,
+      text: `Current date/time: ${nowLocal} (${tz}, UTC${tzOffset}). Use this as the reference for all relative dates like "today", "tomorrow", "next Monday". IMPORTANT: always include the UTC offset in every datetime string you produce, e.g. "2026-05-14T15:00:00${tzOffset}". Never emit a bare datetime without an offset.`,
+    },
+  ];
+
+  type MessageParam = Anthropic.MessageParam;
+  let messages: MessageParam[] = [
+    ...history,
+    { role: "user", content: body.message },
+  ];
+
+  let assistantText = "";
+  const MAX_ITERATIONS = 5;
+
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 1024,
+      system: systemBlocks,
+      tools: TOOLS,
+      messages,
+    });
+
+    if (response.stop_reason === "tool_use") {
+      const toolUseBlocks = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+      );
+
+      messages = [...messages, { role: "assistant", content: response.content }];
+
+      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        toolUseBlocks.map(async (block) => {
+          const result = await executeTool(block, supabase, userData.user.id);
+          return {
+            type: "tool_result" as const,
+            tool_use_id: block.id,
+            content: JSON.stringify(result),
+          };
+        })
+      );
+
+      messages = [...messages, { role: "user", content: toolResults }];
+      continue;
+    }
+
+    // end_turn or max_tokens — extract final text and stop
+    assistantText = response.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("\n");
+    break;
+  }
 
   // ── 4. Persist updated conversation (trimmed to last 50 messages) ─────────────
   const updatedMessages: StoredMessage[] = [
@@ -144,7 +196,7 @@ serve(async (req: Request) => {
     JSON.stringify({
       conversation_id: conversationId,
       message: assistantText,
-      stop_reason: claudeResponse.stop_reason,
+      stop_reason: "end_turn",
     }),
     {
       status: 200,
