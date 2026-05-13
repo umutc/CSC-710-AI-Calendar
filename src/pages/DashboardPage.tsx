@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Calendar, Check, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
 import AIAssistant from "../components/ai/AIAssistant";
 import { looksLikeNL } from "../lib/nlDetect";
+import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
@@ -17,7 +18,7 @@ import ThemeToggle from "../components/common/ThemeToggle";
 import type { EventInput } from "@fullcalendar/core";
 import { Draggable } from "@fullcalendar/interaction";
 import type { EventFormValues } from "../lib/schemas/event";
-import type { Event, Priority, RRulePreset, Todo } from "../types";
+import type { Category, Event, Priority, RRulePreset, Todo } from "../types";
 
 type EditModalState =
   | { mode: "closed" }
@@ -78,6 +79,7 @@ type TodoDraft = {
   title: string;
   due_at: string;
   priority: Priority;
+  category_id: string | null;
   eventStartTime: string;
   eventEndTime: string;
   eventRecurrence: EventFormState["recurrence"];
@@ -594,6 +596,7 @@ function TodoRow({
   todo,
   isEditing,
   draft,
+  categories,
   onEditStart,
   onDraftChange,
   onSave,
@@ -605,6 +608,7 @@ function TodoRow({
   todo: Todo;
   isEditing: boolean;
   draft: TodoDraft | null;
+  categories: Category[];
   onEditStart: (todo: Todo) => void;
   onDraftChange: (patch: Partial<TodoDraft>) => void;
   onSave: () => void;
@@ -670,6 +674,17 @@ function TodoRow({
                   <option value="low">Low</option>
                 </select>
               </div>
+              <select
+                className="w-full rounded-2xl border border-slate-900/10 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-cyan-600 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:focus:border-cyan-300"
+                onChange={(event) => onDraftChange({ category_id: event.target.value === "" ? null : event.target.value })}
+                onKeyDown={onEditKeyDown}
+                value={draft.category_id ?? ""}
+              >
+                <option value="">No category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
               {todo.status === "scheduled" && todo.linked_event_id && draft && (
                 <div className="space-y-3 rounded-2xl border border-violet-600/20 bg-violet-50/60 p-3 dark:border-violet-400/15 dark:bg-violet-500/10">
                   <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">Recurring event schedule</p>
@@ -801,6 +816,19 @@ function TodoRow({
                     AI
                   </span>
                 )}
+                {todo.category_id && (() => {
+                  const cat = categories.find((c) => c.id === todo.category_id);
+                  if (!cat) return null;
+                  return (
+                    <span
+                      className="flex items-center gap-1.5 rounded-full px-3 py-1"
+                      style={{ backgroundColor: cat.color + "22", color: cat.color }}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                      {cat.name}
+                    </span>
+                  );
+                })()}
               </div>
             </>
           )}
@@ -813,6 +841,7 @@ function TodoRow({
 function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteToAI?: (msg: string) => void }) {
   const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
   const { events, createEvent, updateEvent, deleteEvent } = useEvents();
+  const { categories } = useCategories();
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -820,9 +849,26 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
     const draggable = new Draggable(listRef.current, { itemSelector: "[data-todo-id]" });
     return () => draggable.destroy();
   }, []);
+
+  const inferAndPatchTodo = useCallback(
+    async (id: string, title: string) => {
+      const { data, error } = await supabase.functions.invoke<{
+        priority: Priority;
+        category_id: string | null;
+      }>("infer-todo", { body: { title } });
+      if (error || !data) return;
+      const patch: Partial<Todo> = {};
+      if (data.priority) patch.priority = data.priority;
+      if (data.category_id) patch.category_id = data.category_id;
+      if (Object.keys(patch).length > 0) await updateTodo(id, patch);
+    },
+    [updateTodo]
+  );
+
   const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("medium");
+  const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
   const [newDueAt, setNewDueAt] = useState("");
   const [newRecurring, setNewRecurring] = useState(false);
   const [newEventStartTime, setNewEventStartTime] = useState("09:00");
@@ -897,16 +943,19 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
       });
     }
 
-    await createTodo({
+    const todoId = await createTodo({
       title: trimmedTitle,
       priority: newPriority,
+      category_id: newCategoryId,
       due_at: newDueAt || null,
       linked_event_id: linkedEventId,
       status: linkedEventId ? "scheduled" : undefined,
     });
+    if (todoId) void inferAndPatchTodo(todoId, trimmedTitle);
 
     setNewTitle("");
     setNewPriority("medium");
+    setNewCategoryId(null);
     setNewDueAt("");
     setNewRecurring(false);
     setNewEventStartTime("09:00");
@@ -932,6 +981,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         title: todo.title,
         due_at: toDateInputValue(todo.due_at) || (event?.start_at.slice(0, 10) ?? ""),
         priority: todo.priority,
+        category_id: todo.category_id,
         eventStartTime: event ? event.start_at.slice(11, 16) : "09:00",
         eventEndTime: event ? event.end_at.slice(11, 16) : "10:00",
         eventRecurrence: recurrence,
@@ -942,6 +992,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         title: todo.title,
         due_at: toDateInputValue(todo.due_at),
         priority: todo.priority,
+        category_id: todo.category_id,
         eventStartTime: "09:00",
         eventEndTime: "10:00",
         eventRecurrence: "none",
@@ -990,6 +1041,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
       title: trimmedTitle,
       due_at: draft.due_at || null,
       priority: draft.priority,
+      category_id: draft.category_id,
     });
 
     handleEditCancel();
@@ -1053,7 +1105,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
                 </p>
               )}
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <select
                 className="w-full cursor-pointer rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
                 onChange={(event) => setNewPriority(event.target.value as Priority)}
@@ -1064,6 +1116,18 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
+              <select
+                className="w-full cursor-pointer rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
+                onChange={(event) => setNewCategoryId(event.target.value === "" ? null : event.target.value)}
+                value={newCategoryId ?? ""}
+              >
+                <option value="">Category (auto)</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <input
                 className="w-full cursor-pointer rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
                 onChange={(event) => setNewDueAt(event.target.value)}
@@ -1209,6 +1273,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
             sortedTodos.map((todo) => (
               <TodoRow
                 key={todo.id}
+                categories={categories}
                 draft={editingTodoId === todo.id ? draft : null}
                 isEditing={editingTodoId === todo.id}
                 onCancel={handleEditCancel}
@@ -1261,7 +1326,7 @@ export default function DashboardPage() {
         const toLocalISO = (d: Date) =>
           `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
         const end = new Date(date.getTime() + 60 * 60 * 1000);
-        const eventId = await createEvent({ title: todo.title, start_at: toLocalISO(date), end_at: toLocalISO(end) });
+        const eventId = await createEvent({ title: todo.title, start_at: toLocalISO(date), end_at: toLocalISO(end), category_id: todo.category_id });
         if (eventId) {
           await updateTodo(todoId, { status: "scheduled", linked_event_id: eventId });
         }
