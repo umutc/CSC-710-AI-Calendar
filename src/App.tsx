@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import SpaRedirectHandler from "./components/common/SpaRedirectHandler";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { EventProvider } from "./contexts/EventContext";
@@ -30,6 +31,7 @@ export default function App() {
         <ThemeProvider>
           <EventProvider>
             <TodoProvider>
+              <SpaRedirectHandler />
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
