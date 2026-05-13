@@ -8,7 +8,9 @@ import {
 import { Bot, RotateCcw, Send, X } from "lucide-react";
 import { useAIAssistant, type ChatMessage } from "../../hooks/useAIAssistant";
 import { useEvents } from "../../hooks/useEvents";
+import { useVoice } from "../../hooks/useVoice";
 import ConversationBubble from "./ConversationBubble";
+import VoiceButton from "./VoiceButton";
 
 interface Props {
   open: boolean;
@@ -44,6 +46,7 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { isRecording, interimTranscript, supported, start, stop } = useVoice();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -63,6 +66,10 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
       e.preventDefault();
       handleSend();
     }
+  }
+
+  function handleVoiceFinal(text: string) {
+    void onSend(text);
   }
 
   return (
@@ -137,6 +144,13 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
             rows={1}
             value={draft}
           />
+          <VoiceButton
+            isRecording={isRecording}
+            supported={supported}
+            disabled={loading}
+            onPointerDown={() => start(handleVoiceFinal)}
+            onPointerUp={() => stop()}
+          />
           <button
             aria-label="Send message"
             className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white transition hover:bg-violet-700 disabled:opacity-40 dark:bg-violet-500 dark:hover:bg-violet-600"
@@ -147,8 +161,13 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
             <Send size={13} />
           </button>
         </div>
+        {interimTranscript && (
+          <p aria-live="polite" className="mt-1 text-[10px] italic text-slate-500 dark:text-slate-400">
+            {interimTranscript}
+          </p>
+        )}
         <p className="mt-1.5 text-center text-[10px] text-slate-400 dark:text-slate-600">
-          Press Enter to send · Shift+Enter for new line
+          Enter to send · Shift+Enter for new line · Hold mic to speak
         </p>
       </div>
     </div>
