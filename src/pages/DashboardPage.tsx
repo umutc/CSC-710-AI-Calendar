@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Calendar, Camera, Check, ImagePlus, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
 import AIAssistant from "../components/ai/AIAssistant";
 import { looksLikeNL } from "../lib/nlDetect";
+import { inferPriorityFromText } from "../lib/priorityInference";
 import { supabase } from "../lib/supabase";
 import { uploadTodoImage } from "../lib/imageUpload";
 import { useAuth } from "../hooks/useAuth";
@@ -1060,9 +1061,18 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
       imageUrl = await uploadTodoImage(newImageFile, user.id);
     }
 
+    // Keyword-based priority inference for fast paths that skip the AI.
+    // Only kicks in when the user left the priority at its default (medium);
+    // if they explicitly picked a level, we respect it.
+    let appliedPriority = newPriority;
+    if (newPriority === "medium") {
+      const inferred = inferPriorityFromText(trimmedTitle);
+      if (inferred) appliedPriority = inferred;
+    }
+
     const todoId = await createTodo({
       title: trimmedTitle,
-      priority: newPriority,
+      priority: appliedPriority,
       category_id: newCategoryId,
       due_at: newDueAt || null,
       linked_event_id: linkedEventId,
