@@ -907,11 +907,11 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
     return next;
   }, [sortMode, todos]);
 
-  async function handleCreateTodo() {
+  async function handleCreateTodo(forceManual = false) {
     const trimmedTitle = newTitle.trim();
     if (!trimmedTitle) return;
 
-    if (looksLikeNL(trimmedTitle) && onRouteToAI) {
+    if (!forceManual && looksLikeNL(trimmedTitle) && onRouteToAI) {
       setNewTitle("");
       onRouteToAI(trimmedTitle);
       return;
@@ -966,7 +966,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
 
   async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await handleCreateTodo();
+    await handleCreateTodo(true);
   }
 
   function handleEditStart(todo: Todo) {
@@ -1096,13 +1096,33 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
               <input
                 className="w-full rounded-2xl border border-slate-900/10 bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-900/20 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/30 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-white/20 dark:focus:border-cyan-300 dark:focus:ring-cyan-300/20"
                 onChange={(event) => setNewTitle(event.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.shiftKey && looksLikeNL(newTitle) && onRouteToAI) {
+                    e.preventDefault();
+                    const trimmed = newTitle.trim();
+                    setNewTitle("");
+                    onRouteToAI(trimmed);
+                  }
+                }}
                 placeholder="Add a todo title"
                 value={newTitle}
               />
               {onRouteToAI && looksLikeNL(newTitle) && (
-                <p className="mt-1.5 px-1 text-xs text-violet-500 dark:text-violet-400">
-                  ✨ Looks like an event — press Enter to send to AI
-                </p>
+                <div className="mt-1.5 flex items-center justify-between px-1">
+                  <p className="text-xs text-violet-500 dark:text-violet-400">
+                    Looks like an event - SHIFT + ENTER to send to AI
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = newTitle.trim();
+                      if (trimmed) { setNewTitle(""); onRouteToAI(trimmed); }
+                    }}
+                    className="text-xs text-slate-400 underline decoration-dotted hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  >
+                    Schedule with AI
+                  </button>
+                </div>
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
