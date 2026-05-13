@@ -6,12 +6,11 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
-import type { DateClickArg } from "@fullcalendar/interaction";
+import type { DateClickArg, DropArg } from "@fullcalendar/interaction";
 import type {
   DatesSetArg,
   EventClickArg,
   EventMountArg,
-  DropArg,
 } from "@fullcalendar/core";
 import { expandRecurringEvents } from "../../lib/rruleHelpers";
 import type { Event } from "../../types";
