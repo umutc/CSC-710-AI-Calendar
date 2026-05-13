@@ -17,6 +17,7 @@ import CalendarView from "../components/calendar/CalendarView";
 import EventModal from "../components/calendar/EventModal";
 import HolidayModal from "../components/calendar/HolidayModal";
 import ThemeToggle from "../components/common/ThemeToggle";
+import BrowserSupportBanner from "../components/common/BrowserSupportBanner";
 import type { EventInput } from "@fullcalendar/core";
 import { Draggable } from "@fullcalendar/interaction";
 import type { EventFormValues } from "../lib/schemas/event";
@@ -1739,6 +1740,7 @@ export default function DashboardPage() {
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <BrowserSupportBanner />
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] lg:items-start">
           <CalendarPanel
             events={visibleEvents}
