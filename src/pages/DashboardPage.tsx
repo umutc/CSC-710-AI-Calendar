@@ -259,12 +259,17 @@ function DashboardHeader({
 }) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-900/10 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 sm:h-11 sm:w-11">
             <Calendar className="h-5 w-5 text-white" />
           </div>
-          <div className="space-y-1">
+          {/* Mobile wordmark */}
+          <p className="text-base font-semibold tracking-tight text-slate-900 md:hidden dark:text-white">
+            Dayforma
+          </p>
+          {/* Desktop welcome block */}
+          <div className="hidden space-y-1 md:block">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700/90 dark:text-cyan-300/80">
               Dayforma Dashboard
             </p>
@@ -279,17 +284,16 @@ function DashboardHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="hidden rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1 text-xs text-slate-500 sm:inline-flex dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-400">
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <span className="hidden rounded-full border border-slate-900/10 bg-slate-900/[0.04] px-3 py-1 text-xs text-slate-500 lg:inline-flex dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-400">
             Dashboard
           </span>
-          {/* Removed standalone Week view button */}
           <button
-            className="inline-flex rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-600 lg:hidden dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+            className="inline-flex rounded-full bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-cyan-600 sm:px-4 sm:py-2 sm:text-sm lg:hidden dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
             onClick={onOpenTodos}
             type="button"
           >
-            Open todos
+            Todos
           </button>
           <button
             className="rounded-full p-2 text-slate-500 transition hover:bg-slate-900/[0.06] hover:text-cyan-700 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-cyan-300"
@@ -545,7 +549,7 @@ function CalendarPanel({ events, extraEvents, categoryColorMap, onDateClick, onE
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
+      <div className="hidden gap-4 lg:grid xl:grid-cols-[1.3fr_0.9fr]">
         <section className="panel-surface p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -1777,23 +1781,8 @@ export default function DashboardPage() {
           </aside>
         </div>
 
-        <section className="mt-6 lg:hidden">
-          <div className="panel-surface p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Mobile</p>
-                <h2 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Stacked dashboard flow</h2>
-              </div>
-              <button
-                className="rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white dark:bg-cyan-300 dark:text-slate-950"
-                onClick={() => setMobileDrawerOpen(true)}
-                type="button"
-              >
-                View todos
-              </button>
-            </div>
-          </div>
-        </section>
+        {/* Mobile "Stacked dashboard flow" marketing card removed; the
+            header "Todos" button + bottom drawer cover this need. */}
       </main>
 
       <EventComposer
