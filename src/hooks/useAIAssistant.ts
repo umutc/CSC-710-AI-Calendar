@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { applyWithUndo } from "../lib/applyWithUndo";
 import { uploadTodoImage } from "../lib/imageUpload";
@@ -20,6 +22,11 @@ interface AIResponse {
   mutations?: MutationRecord[];
 }
 
+interface QueuedSend {
+  text: string;
+  voice: boolean;
+}
+
 const MAX_DISPLAY = 40; // 20 turns × 2 messages
 
 export function useAIAssistant(onResponse?: () => void) {
@@ -30,6 +37,12 @@ export function useAIAssistant(onResponse?: () => void) {
   const onResponseRef = useRef(onResponse);
   onResponseRef.current = onResponse;
 
+  // In-memory queue of pending sends while offline. We keep only the most recent
+  // queued message — this is intentionally lightweight (no persistence across
+  // reloads, no IndexedDB).
+  const offlineQueueRef = useRef<QueuedSend | null>(null);
+  const sendRef = useRef<((text: string, opts?: { voice?: boolean; imageFile?: File }) => Promise<void>) | null>(null);
+
   const { createEvent, updateEvent, deleteEvent } = useEvents();
   const { deleteTodo } = useTodos();
 
@@ -38,6 +51,16 @@ export function useAIAssistant(onResponse?: () => void) {
       const trimmed = text.trim();
       const hasImage = !!opts?.imageFile;
       if ((!trimmed && !hasImage) || loading) return;
+
+      // Offline guard — queue the (text-only) message and bail out. Image attachments
+      // are intentionally not queued; the user can re-attach when back online.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        if (trimmed) {
+          offlineQueueRef.current = { text: trimmed, voice: opts?.voice ?? false };
+        }
+        toast.error("You're offline — message queued.");
+        return;
+      }
 
       let imageUrl: string | null = null;
       if (hasImage) {
@@ -77,8 +100,24 @@ export function useAIAssistant(onResponse?: () => void) {
 
       setLoading(false);
 
-      if (fnError || !data?.message) {
-        setError(fnError?.message ?? "No response from assistant");
+      if (fnError) {
+        // Rate limit: surface a clean toast and let the user retry manually.
+        const status =
+          fnError instanceof FunctionsHttpError
+            ? (fnError.context as Response | undefined)?.status
+            : (fnError as { status?: number } | null)?.status;
+        if (status === 429) {
+          toast.error("AI is busy, try again in a moment.");
+        } else {
+          toast.error("Couldn't reach the assistant. Try again.");
+        }
+        setError(fnError.message ?? "Request failed");
+        return;
+      }
+
+      if (!data?.message) {
+        toast.error("Couldn't reach the assistant. Try again.");
+        setError("No response from assistant");
         return;
       }
 
@@ -113,6 +152,24 @@ export function useAIAssistant(onResponse?: () => void) {
     },
     [loading, createEvent, updateEvent, deleteEvent, deleteTodo]
   );
+
+  // Keep a stable ref to the latest `send` so the `online` listener never
+  // captures a stale closure.
+  sendRef.current = send;
+
+  // When the browser comes back online and we have a queued message, replay
+  // it automatically and clear the queue.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleOnline = () => {
+      const queued = offlineQueueRef.current;
+      if (!queued) return;
+      offlineQueueRef.current = null;
+      void sendRef.current?.(queued.text, { voice: queued.voice });
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
 
   const clear = useCallback(() => {
     setMessages([]);
