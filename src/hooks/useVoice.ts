@@ -1,5 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+// Local minimal declarations — SpeechRecognition is not in all TS DOM lib versions
+interface SRResult {
+  readonly isFinal: boolean;
+  0: { readonly transcript: string };
+}
+interface SRResultList {
+  readonly length: number;
+  [index: number]: SRResult;
+}
+interface SREvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SRResultList;
+}
+interface SpeechRec extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((ev: SREvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+type SpeechRecCtor = new () => SpeechRec;
+
+function getRecognitionCtor(): SpeechRecCtor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as Record<string, unknown>;
+  return (w["SpeechRecognition"] ?? w["webkitSpeechRecognition"] ?? null) as SpeechRecCtor | null;
+}
+
 export interface UseVoiceReturn {
   isRecording: boolean;
   interimTranscript: string;
@@ -8,19 +40,10 @@ export interface UseVoiceReturn {
   stop: () => void;
 }
 
-function getRecognitionCtor(): typeof SpeechRecognition | null {
-  if (typeof window === "undefined") return null;
-  return (
-    window.SpeechRecognition ??
-    (window as Record<string, unknown>)["webkitSpeechRecognition"] as typeof SpeechRecognition | undefined ??
-    null
-  );
-}
-
 export function useVoice(): UseVoiceReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRec | null>(null);
 
   const supported = getRecognitionCtor() !== null;
 
@@ -34,7 +57,7 @@ export function useVoice(): UseVoiceReturn {
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SREvent) => {
       let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
