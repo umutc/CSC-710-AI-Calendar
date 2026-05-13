@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import EventModal from "../components/calendar/EventModal";
 import HolidayModal from "../components/calendar/HolidayModal";
 import ThemeToggle from "../components/common/ThemeToggle";
 import type { EventInput } from "@fullcalendar/core";
+import { Draggable } from "@fullcalendar/interaction";
 import type { EventFormValues } from "../lib/schemas/event";
 import type { Event, Priority, RRulePreset, Todo } from "../types";
 
@@ -512,9 +513,10 @@ interface CalendarPanelProps {
   onDateClick: (date: Date, allDay: boolean) => void;
   onEventClick: (id: string) => void;
   onAddEvent: () => void;
+  onExternalDrop?: (args: { todoId: string; date: Date; shiftKey: boolean }) => void;
 }
 
-function CalendarPanel({ events, extraEvents, categoryColorMap, onDateClick, onEventClick, onAddEvent }: CalendarPanelProps) {
+function CalendarPanel({ events, extraEvents, categoryColorMap, onDateClick, onEventClick, onAddEvent, onExternalDrop }: CalendarPanelProps) {
   return (
     <section className="space-y-6">
       <div className="panel-surface overflow-hidden p-4 sm:p-6">
@@ -524,6 +526,7 @@ function CalendarPanel({ events, extraEvents, categoryColorMap, onDateClick, onE
           categoryColorMap={categoryColorMap}
           onDateClick={onDateClick}
           onEventClick={onEventClick}
+          onExternalDrop={onExternalDrop}
         />
       </div>
 
@@ -614,10 +617,12 @@ function TodoRow({
 
   return (
     <article
-      className={`rounded-3xl border px-4 py-4 ${done
+      className={`cursor-grab rounded-3xl border px-4 py-4 active:cursor-grabbing ${done
           ? "border-slate-900/[0.08] bg-slate-900/[0.03] text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400"
           : "border-slate-900/10 bg-white/95 text-slate-900 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100"
         }`}
+      data-todo-id={todo.id}
+      data-event={JSON.stringify({ title: todo.title, duration: "01:00", create: false })}
     >
       <div className="flex items-start gap-3">
         <button
@@ -808,6 +813,13 @@ function TodoRow({
 function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteToAI?: (msg: string) => void }) {
   const { todos, loading, error, createTodo, deleteTodo, toggleStatus, updateTodo } = useTodos();
   const { events, createEvent, updateEvent, deleteEvent } = useEvents();
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    const draggable = new Draggable(listRef.current, { itemSelector: "[data-todo-id]" });
+    return () => draggable.destroy();
+  }, []);
   const [sortMode, setSortMode] = useState<SortMode>("priority");
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("medium");
@@ -1150,6 +1162,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         <div className="mt-5 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sort by</p>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-600">Drag to calendar · Hold Shift to skip AI</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -1175,7 +1188,7 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
           </div>
         </div>
 
-        <div className="mt-5 space-y-3">
+        <div ref={listRef} className="mt-5 space-y-3">
           {loading && (
             <p className="rounded-3xl border border-slate-900/[0.08] bg-slate-900/[0.03] px-4 py-6 text-center text-sm text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-slate-400">
               Loading todos…
@@ -1226,7 +1239,7 @@ export default function DashboardPage() {
   const { user, profile, signOut } = useAuth();
   const { events, createEvent } = useEvents();
   const { categories } = useCategories();
-  const { todos } = useTodos();
+  const { todos, updateTodo } = useTodos();
   const holidays = useHolidays();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -1237,6 +1250,28 @@ export default function DashboardPage() {
     setAiQueuedMessage(msg);
     setAiPanelOpen(true);
   }
+
+  const handleExternalDrop = useCallback(
+    async ({ todoId, date, shiftKey }: { todoId: string; date: Date; shiftKey: boolean }) => {
+      const todo = todos.find((t) => t.id === todoId);
+      if (!todo) return;
+
+      if (shiftKey) {
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const toLocalISO = (d: Date) =>
+          `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+        const end = new Date(date.getTime() + 60 * 60 * 1000);
+        const eventId = await createEvent({ title: todo.title, start_at: toLocalISO(date), end_at: toLocalISO(end) });
+        if (eventId) {
+          await updateTodo(todoId, { status: "scheduled", linked_event_id: eventId });
+        }
+      } else {
+        const dateStr = date.toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" });
+        openAIWithMessage(`Schedule my todo "${todo.title}" on ${dateStr}. Choose an appropriate duration.`);
+      }
+    },
+    [todos, createEvent, updateTodo]
+  );
   const [eventComposerOpen, setEventComposerOpen] = useState(false);
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
@@ -1407,6 +1442,7 @@ export default function DashboardPage() {
             onDateClick={openComposerForDate}
             onEventClick={handleEventClick}
             onAddEvent={handleAddEvent}
+            onExternalDrop={handleExternalDrop}
           />
           <aside className="hidden lg:block">
             <TodoPanel onRouteToAI={openAIWithMessage} />
