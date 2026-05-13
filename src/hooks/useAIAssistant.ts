@@ -33,7 +33,7 @@ export function useAIAssistant(onResponse?: () => void) {
   const { deleteTodo } = useTodos();
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, opts?: { voice?: boolean }) => {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
 
@@ -53,6 +53,7 @@ export function useAIAssistant(onResponse?: () => void) {
             conversation_id: conversationIdRef.current ?? undefined,
             message: trimmed,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            voice: opts?.voice ?? false,
           },
         }
       );
@@ -87,6 +88,11 @@ export function useAIAssistant(onResponse?: () => void) {
       };
       setMessages((prev) => [...prev, assistantMsg].slice(-MAX_DISPLAY));
       onResponseRef.current?.();
+
+      if (opts?.voice) {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(data.message));
+      }
     },
     [loading, createEvent, updateEvent, deleteEvent, deleteTodo]
   );

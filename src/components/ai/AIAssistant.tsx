@@ -37,7 +37,7 @@ interface PanelContentProps {
   messages: ChatMessage[];
   loading: boolean;
   error: string | null;
-  onSend: (text: string) => Promise<void>;
+  onSend: (text: string, opts?: { voice?: boolean }) => Promise<void>;
   onClear: () => void;
   onClose: () => void;
 }
@@ -69,7 +69,7 @@ function PanelContent({ messages, loading, error, onSend, onClear, onClose }: Pa
   }
 
   function handleVoiceFinal(text: string) {
-    void onSend(text);
+    void onSend(text, { voice: true });
   }
 
   return (

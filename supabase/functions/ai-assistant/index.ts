@@ -31,6 +31,7 @@ interface AssistantRequest {
   conversation_id?: string;
   message: string;
   timezone?: string;
+  voice?: boolean;
 }
 
 const CORS_HEADERS = {
@@ -140,13 +141,13 @@ serve(async (req: Request) => {
 
     if (response.stop_reason === "tool_use") {
       const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+        (b: Anthropic.ContentBlock): b is Anthropic.ToolUseBlock => b.type === "tool_use"
       );
 
       messages = [...messages, { role: "assistant", content: response.content }];
 
       const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-        toolUseBlocks.map(async (block) => {
+        toolUseBlocks.map(async (block: Anthropic.ToolUseBlock) => {
           const result = await executeTool(block, supabase, userData.user.id);
           if (result.mutation) mutations.push(result.mutation as MutationRecord);
           return {
@@ -163,8 +164,8 @@ serve(async (req: Request) => {
 
     // end_turn or max_tokens — extract final text and stop
     assistantText = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
+      .filter((b: Anthropic.ContentBlock): b is Anthropic.TextBlock => b.type === "text")
+      .map((b: Anthropic.TextBlock) => b.text)
       .join("\n");
     break;
   }
@@ -172,8 +173,8 @@ serve(async (req: Request) => {
   // ── 4. Persist updated conversation (trimmed to last 50 messages) ─────────────
   const updatedMessages: StoredMessage[] = [
     ...history,
-    { role: "user", content: body.message },
-    { role: "assistant", content: assistantText },
+    { role: "user" as const, content: body.message },
+    { role: "assistant" as const, content: assistantText },
   ].slice(-MAX_STORED_MESSAGES);
 
   if (conversationId) {
