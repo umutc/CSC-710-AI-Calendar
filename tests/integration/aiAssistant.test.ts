@@ -236,3 +236,42 @@ describe("runAssistantLoop", () => {
     expect(result.iterations).toBe(MAX_ITERATIONS);
   });
 });
+
+// ── System prompt content guardrails (#93 regression) ────────────────────────
+// The fix for #93 is a system-prompt-only patch: we instruct Claude to refuse
+// mutating tool calls inside read-only intents (summarise / list / show / ...).
+// There is no programmatic tool gate yet, so the only static guardrail is that
+// the prompt literal keeps the new rule. These tests fail loudly if a future
+// edit accidentally strips that paragraph.
+
+describe("SYSTEM_PROMPT (issue #93)", () => {
+  it("declares the read-only-intent rule with high prominence", async () => {
+    const { SYSTEM_PROMPT } = await import(
+      "../../supabase/functions/ai-assistant/systemPrompt"
+    );
+    expect(SYSTEM_PROMPT).toMatch(/read-only intents/i);
+    expect(SYSTEM_PROMPT).toMatch(/CRITICAL/i);
+  });
+
+  it("lists the four mutating tools it forbids inside read-only turns", async () => {
+    const { SYSTEM_PROMPT } = await import(
+      "../../supabase/functions/ai-assistant/systemPrompt"
+    );
+    for (const tool of [
+      "create_event",
+      "update_event",
+      "delete_event",
+      "create_todo",
+    ]) {
+      expect(SYSTEM_PROMPT).toContain(tool);
+    }
+  });
+
+  it("calls out the Summarize / What's on my calendar entry points by name", async () => {
+    const { SYSTEM_PROMPT } = await import(
+      "../../supabase/functions/ai-assistant/systemPrompt"
+    );
+    expect(SYSTEM_PROMPT).toMatch(/Summari[sz]e this week/i);
+    expect(SYSTEM_PROMPT).toMatch(/What's on my calendar/i);
+  });
+});
