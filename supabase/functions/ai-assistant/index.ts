@@ -1,15 +1,18 @@
 // Dayforma AI Assistant — Supabase Edge Function
 // Runtime: Deno (Supabase Edge)
 // Model: claude-sonnet-4-6
+//
+// The agentic tool-use loop body lives in `./loop.ts` so it can be
+// integration-tested under Vitest with mocked Anthropic + Supabase clients.
+// This file is just the HTTP wrapper: JWT verification, conversation load
+// and persist, then delegate to `runAssistantLoop`.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@^0.40.0";
 import { createClient } from "jsr:@supabase/supabase-js@^2.57.4";
 import { TOOLS } from "./tools.ts";
-import { executeTool } from "./toolHandlers.ts";
-import type { MutationRecord } from "./toolHandlers.ts";
+import { runAssistantLoop } from "./loop.ts";
 
-const CLAUDE_MODEL = "claude-sonnet-4-6";
 const MAX_STORED_MESSAGES = 50;
 
 const SYSTEM_PROMPT = `You are Dayforma, a calendar and todo assistant. You help the user plan
@@ -148,51 +151,15 @@ serve(async (req: Request) => {
       }
     : { role: "user", content: body.message };
 
-  let messages: MessageParam[] = [...history, userMessage];
-
-  let assistantText = "";
-  const MAX_ITERATIONS = 5;
-  const mutations: MutationRecord[] = [];
-
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system: systemBlocks,
-      tools: TOOLS,
-      messages,
-    });
-
-    if (response.stop_reason === "tool_use") {
-      const toolUseBlocks = response.content.filter(
-        (b: Anthropic.ContentBlock): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-      );
-
-      messages = [...messages, { role: "assistant", content: response.content }];
-
-      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-        toolUseBlocks.map(async (block: Anthropic.ToolUseBlock) => {
-          const result = await executeTool(block, supabase, userData.user.id);
-          if (result.mutation) mutations.push(result.mutation as MutationRecord);
-          return {
-            type: "tool_result" as const,
-            tool_use_id: block.id,
-            content: JSON.stringify(result),
-          };
-        })
-      );
-
-      messages = [...messages, { role: "user", content: toolResults }];
-      continue;
-    }
-
-    // end_turn or max_tokens — extract final text and stop
-    assistantText = response.content
-      .filter((b: Anthropic.ContentBlock): b is Anthropic.TextBlock => b.type === "text")
-      .map((b: Anthropic.TextBlock) => b.text)
-      .join("\n");
-    break;
-  }
+  const { assistantText, mutations } = await runAssistantLoop({
+    anthropic,
+    supabase,
+    userId: userData.user.id,
+    systemBlocks,
+    history: history as MessageParam[],
+    userMessage,
+    tools: TOOLS,
+  });
 
   // ── 4. Persist updated conversation (trimmed to last 50 messages) ─────────────
   // Store only text in history; image references stay one-shot per turn.
