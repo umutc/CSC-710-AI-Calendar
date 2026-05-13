@@ -15,6 +15,7 @@ const base: Todo = {
   category_id: null,
   status: "pending",
   linked_event_id: null,
+  image_url: null,
   created_by_ai: false,
   created_at: "2026-04-29T00:00:00.000Z",
   updated_at: "2026-04-29T00:00:00.000Z",

@@ -75,6 +75,7 @@ export interface CreateTodoInput {
   category_id?: string | null;
   status?: TodoStatus;
   linked_event_id?: string | null;
+  image_url?: string | null;
 }
 
 export interface TodoContextValue {
@@ -178,6 +179,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
         category_id: input.category_id ?? null,
         status: input.status ?? "pending",
         linked_event_id: input.linked_event_id ?? null,
+        image_url: input.image_url ?? null,
         created_by_ai: false,
         created_at: now,
         updated_at: now,
@@ -194,6 +196,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
         category_id: optimistic.category_id,
         status: optimistic.status,
         linked_event_id: optimistic.linked_event_id,
+        image_url: optimistic.image_url,
       });
 
       if (error) {
