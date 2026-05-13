@@ -24,7 +24,17 @@ const VALID_VIEWS = new Set([
   "listWeek",
 ]);
 
-const DEFAULT_VIEW = "dayGridMonth";
+const DEFAULT_VIEW_DESKTOP = "dayGridMonth";
+const DEFAULT_VIEW_MOBILE = "listWeek";
+
+function isMobileViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.matchMedia("(max-width: 767px)").matches;
+  } catch {
+    return false;
+  }
+}
 
 function getSavedView(): string {
   try {
@@ -33,7 +43,7 @@ function getSavedView(): string {
   } catch {
     /* localStorage may be unavailable */
   }
-  return DEFAULT_VIEW;
+  return isMobileViewport() ? DEFAULT_VIEW_MOBILE : DEFAULT_VIEW_DESKTOP;
 }
 
 const DEFAULT_VISIBLE_RANGE = {
