@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { applyWithUndo } from "../lib/applyWithUndo";
+import type { MutationRecord } from "../lib/applyWithUndo";
+import { useEvents } from "./useEvents";
+import { useTodos } from "./useTodos";
+import type { CreateEventInput, UpdateEventInput } from "../contexts/EventContext";
 
 export interface ChatMessage {
   id: string;
@@ -11,6 +16,7 @@ interface AIResponse {
   conversation_id: string;
   message: string;
   stop_reason: string;
+  mutations?: MutationRecord[];
 }
 
 const MAX_DISPLAY = 40; // 20 turns × 2 messages
@@ -22,6 +28,9 @@ export function useAIAssistant(onResponse?: () => void) {
   const conversationIdRef = useRef<string | null>(null);
   const onResponseRef = useRef(onResponse);
   onResponseRef.current = onResponse;
+
+  const { createEvent, updateEvent, deleteEvent } = useEvents();
+  const { deleteTodo } = useTodos();
 
   const send = useCallback(
     async (text: string) => {
@@ -59,6 +68,18 @@ export function useAIAssistant(onResponse?: () => void) {
         conversationIdRef.current = data.conversation_id;
       }
 
+      for (const mut of data.mutations ?? []) {
+        if (mut.type === "create_event") {
+          applyWithUndo("Event created", () => deleteEvent(mut.id));
+        } else if (mut.type === "update_event") {
+          applyWithUndo("Event updated", () => updateEvent(mut.id, mut.snapshot as UpdateEventInput));
+        } else if (mut.type === "delete_event") {
+          applyWithUndo("Event deleted", async () => { await createEvent(mut.snapshot as unknown as CreateEventInput); });
+        } else if (mut.type === "create_todo") {
+          applyWithUndo("Todo created", () => deleteTodo(mut.id));
+        }
+      }
+
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -67,7 +88,7 @@ export function useAIAssistant(onResponse?: () => void) {
       setMessages((prev) => [...prev, assistantMsg].slice(-MAX_DISPLAY));
       onResponseRef.current?.();
     },
-    [loading]
+    [loading, createEvent, updateEvent, deleteEvent, deleteTodo]
   );
 
   const clear = useCallback(() => {
