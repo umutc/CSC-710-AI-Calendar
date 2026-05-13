@@ -11,6 +11,7 @@ import type {
   DatesSetArg,
   EventClickArg,
   EventMountArg,
+  DropArg,
 } from "@fullcalendar/core";
 import { expandRecurringEvents } from "../../lib/rruleHelpers";
 import type { Event } from "../../types";
@@ -47,6 +48,7 @@ interface CalendarViewProps {
   categoryColorMap?: Record<string, string>;
   onDateClick?: (date: Date, allDay: boolean) => void;
   onEventClick?: (eventId: string) => void;
+  onExternalDrop?: (args: { todoId: string; date: Date; shiftKey: boolean }) => void;
 }
 
 export default function CalendarView({
@@ -55,6 +57,7 @@ export default function CalendarView({
   categoryColorMap,
   onDateClick,
   onEventClick,
+  onExternalDrop,
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
@@ -127,6 +130,16 @@ export default function CalendarView({
     setTooltip(null);
   }, []);
 
+  const handleDrop = useCallback(
+    (info: DropArg) => {
+      const todoId = (info.draggedEl as HTMLElement).dataset.todoId;
+      if (todoId && onExternalDrop) {
+        onExternalDrop({ todoId, date: info.date, shiftKey: info.jsEvent.shiftKey });
+      }
+    },
+    [onExternalDrop]
+  );
+
   return (
     <div className="fc-dayforma">
       <FullCalendar
@@ -152,6 +165,8 @@ export default function CalendarView({
         eventMouseLeave={handleMouseLeave}
         events={concreteEvents}
         height={720}
+        droppable={true}
+        drop={handleDrop}
         editable={false}
         selectable={true}
         dayMaxEvents={3}
