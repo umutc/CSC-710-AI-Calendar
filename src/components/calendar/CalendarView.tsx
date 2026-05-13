@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { EventInput, EventHoveringArg } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
@@ -60,6 +60,18 @@ interface CalendarViewProps {
   onExternalDrop?: (args: { todoId: string; date: Date; shiftKey: boolean }) => void;
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(isMobileViewport);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
+
 export default function CalendarView({
   events,
   extraEvents,
@@ -71,6 +83,7 @@ export default function CalendarView({
   const calendarRef = useRef<FullCalendar>(null);
   const [visibleRange, setVisibleRange] = useState(DEFAULT_VISIBLE_RANGE);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const isMobile = useIsMobile();
 
   const concreteEvents = useMemo(() => {
     try {
@@ -155,11 +168,25 @@ export default function CalendarView({
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
         initialView={getSavedView()}
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
-        }}
+        headerToolbar={
+          isMobile
+            ? { left: "prev,next", center: "title", right: "today" }
+            : {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
+              }
+        }
+        footerToolbar={
+          isMobile
+            ? { center: "dayGridMonth,timeGridWeek,timeGridDay,listWeek" }
+            : false
+        }
+        titleFormat={
+          isMobile
+            ? { month: "short", day: "numeric" }
+            : undefined
+        }
         buttonText={{
           month: "Month",
           week: "Week",
