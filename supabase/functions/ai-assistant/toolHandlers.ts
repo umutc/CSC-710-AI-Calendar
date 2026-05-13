@@ -13,6 +13,7 @@ import {
   SummarizeWeekSchema,
   UpdateEventSchema,
 } from "./tools.ts";
+import { findFreeSlots } from "./findFreeTime.ts";
 
 type ToolUseBlock = Anthropic.ToolUseBlock;
 
@@ -149,37 +150,24 @@ export async function executeTool(
       const dayStart = `${input.date}T${afterTime}:00`;
       const dayEnd = `${input.date}T${beforeTime}:00`;
 
+      // Fetch every event that OVERLAPS the search window. The previous
+      // filter (`gte('start_at', dayStart).lt('end_at', dayEnd)`) dropped
+      // events that straddled either boundary, causing find_free_time to
+      // propose slots that overlapped them (bug #79). The correct overlap
+      // test is `start_at < windowEnd AND end_at > windowStart`.
       const { data: events } = await supabase
         .from("events")
         .select("start_at, end_at, title")
         .eq("user_id", userId)
-        .gte("start_at", dayStart)
-        .lt("end_at", dayEnd)
+        .lt("start_at", dayEnd)
+        .gt("end_at", dayStart)
         .order("start_at");
 
-      const durationMs = input.duration_minutes * 60 * 1000;
-      const slots: Array<{ start: string; end: string }> = [];
-      let cursor = new Date(dayStart);
-      const workEnd = new Date(dayEnd);
-
-      for (const ev of events ?? []) {
-        const evStart = new Date(ev.start_at);
-        if (evStart.getTime() - cursor.getTime() >= durationMs) {
-          slots.push({
-            start: cursor.toISOString(),
-            end: new Date(cursor.getTime() + durationMs).toISOString(),
-          });
-        }
-        const evEnd = new Date(ev.end_at);
-        if (evEnd > cursor) cursor = evEnd;
-      }
-
-      if (workEnd.getTime() - cursor.getTime() >= durationMs) {
-        slots.push({
-          start: cursor.toISOString(),
-          end: new Date(cursor.getTime() + durationMs).toISOString(),
-        });
-      }
+      const slots = findFreeSlots(events ?? [], {
+        windowStart: dayStart,
+        windowEnd: dayEnd,
+        durationMinutes: input.duration_minutes,
+      });
 
       return { date: input.date, duration_minutes: input.duration_minutes, free_slots: slots };
     }
