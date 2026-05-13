@@ -81,7 +81,7 @@ export interface TodoContextValue {
   todos: Todo[];
   loading: boolean;
   error: string | null;
-  createTodo: (input: CreateTodoInput) => Promise<void>;
+  createTodo: (input: CreateTodoInput) => Promise<string>;
   updateTodo: (id: string, patch: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleStatus: (id: string) => Promise<void>;
@@ -161,10 +161,10 @@ export function TodoProvider({ children }: { children: ReactNode }) {
 
   // ── CRUD ─────────────────────────────────────────────────────────────────
   const createTodo = useCallback(
-    async (input: CreateTodoInput) => {
+    async (input: CreateTodoInput): Promise<string> => {
       if (!user?.id) {
         toast.error("Not signed in");
-        return;
+        return "";
       }
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
@@ -200,6 +200,7 @@ export function TodoProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "DELETE_TODO", payload: { id } });
         toast.error(`Failed to create todo: ${error.message}`);
       }
+      return id;
     },
     [user?.id]
   );
