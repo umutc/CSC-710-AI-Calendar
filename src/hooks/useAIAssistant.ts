@@ -74,7 +74,7 @@ export function useAIAssistant(onResponse?: () => void) {
         } else if (mut.type === "update_event") {
           applyWithUndo("Event updated", () => updateEvent(mut.id, mut.snapshot as UpdateEventInput));
         } else if (mut.type === "delete_event") {
-          applyWithUndo("Event deleted", () => createEvent(mut.snapshot as CreateEventInput));
+          applyWithUndo("Event deleted", async () => { await createEvent(mut.snapshot as unknown as CreateEventInput); });
         } else if (mut.type === "create_todo") {
           applyWithUndo("Todo created", () => deleteTodo(mut.id));
         }
