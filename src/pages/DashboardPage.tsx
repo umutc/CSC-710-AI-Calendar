@@ -2,7 +2,8 @@ import { useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Check, LogOut, Pencil, Settings, Trash2, X } from "lucide-react";
+import { Calendar, Check, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
+import AIAssistant from "../components/ai/AIAssistant";
 import { useAuth } from "../hooks/useAuth";
 import { useCategories } from "../hooks/useCategories";
 import { useEvents } from "../hooks/useEvents";
@@ -1215,6 +1216,7 @@ export default function DashboardPage() {
   const holidays = useHolidays();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [eventComposerOpen, setEventComposerOpen] = useState(false);
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>(getDefaultEventFormState());
@@ -1459,6 +1461,21 @@ export default function DashboardPage() {
           <TodoPanel mobile />
         </div>
       </div>
+
+      {/* Schedule with AI floating button */}
+      <button
+        aria-label="Open AI assistant"
+        className={`fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:bg-violet-700 hover:shadow-violet-500/30 active:scale-95 dark:bg-violet-500 dark:hover:bg-violet-600 ${
+          aiPanelOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+        onClick={() => setAiPanelOpen(true)}
+        type="button"
+      >
+        <Sparkles size={16} />
+        Schedule with AI
+      </button>
+
+      <AIAssistant open={aiPanelOpen} onClose={() => setAiPanelOpen(false)} />
     </div>
   );
 }
