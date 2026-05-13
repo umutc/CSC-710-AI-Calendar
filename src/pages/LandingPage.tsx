@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Calendar, Mic, Undo2, Sparkles, ArrowRight } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 const features = [
   {
@@ -27,6 +29,14 @@ const features = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Already signed in → skip the marketing page and land on /dashboard.
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
