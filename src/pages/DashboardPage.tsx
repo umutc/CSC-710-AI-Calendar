@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { useNavigate } from "react-router";
 import { format, isThisWeek, isToday, isTomorrow, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Check, ImagePlus, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
+import { Calendar, Camera, Check, ImagePlus, LogOut, Pencil, Settings, Sparkles, Trash2, X } from "lucide-react";
 import AIAssistant from "../components/ai/AIAssistant";
 import { looksLikeNL } from "../lib/nlDetect";
 import { supabase } from "../lib/supabase";
@@ -943,6 +943,64 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
   const [draft, setDraft] = useState<TodoDraft | null>(null);
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+
+  const stopCameraStream = useCallback(() => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    }
+  }, []);
+
+  const closeCamera = useCallback(() => {
+    stopCameraStream();
+    setCameraOpen(false);
+    setCameraError(null);
+  }, [stopCameraStream]);
+
+  const openCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+      cameraStreamRef.current = stream;
+      setCameraOpen(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown camera error";
+      setCameraError(message);
+      toast.error(`Camera unavailable: ${message}`);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && cameraStreamRef.current) {
+      videoRef.current.srcObject = cameraStreamRef.current;
+    }
+  }, [cameraOpen]);
+
+  useEffect(() => stopCameraStream, [stopCameraStream]);
+
+  const captureFromCamera = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `camera-${Date.now()}.png`, { type: "image/png" });
+      setNewImageFile(file);
+      closeCamera();
+    }, "image/png");
+  }, [closeCamera]);
 
   const activeCount = todos.filter((t) => t.status !== "done").length;
 
@@ -1260,6 +1318,14 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
                 <ImagePlus className="h-3.5 w-3.5" />
                 {newImageFile ? "Replace image" : "Attach handwritten note"}
               </label>
+              <button
+                className="flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-900/10 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-900/[0.04] dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-white/10"
+                onClick={openCamera}
+                type="button"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                Take photo
+              </button>
             </div>
 
             <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-slate-700 dark:text-slate-200">
@@ -1418,6 +1484,39 @@ function TodoPanel({ mobile = false, onRouteToAI }: { mobile?: boolean; onRouteT
         </div>
       </div>
     </section>
+    {cameraOpen && (
+      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 p-4">
+        <video
+          ref={videoRef}
+          autoPlay
+          className="max-h-[70vh] max-w-[90vw] rounded-2xl shadow-2xl"
+          muted
+          playsInline
+        />
+        {cameraError && (
+          <p className="mt-3 max-w-md rounded-xl bg-red-500/20 px-4 py-2 text-center text-sm text-red-100">
+            {cameraError}
+          </p>
+        )}
+        <div className="mt-5 flex gap-3">
+          <button
+            className="flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-cyan-700"
+            onClick={captureFromCamera}
+            type="button"
+          >
+            <Camera className="h-4 w-4" />
+            Capture
+          </button>
+          <button
+            className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/20"
+            onClick={closeCamera}
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
     {lightboxUrl && (
       <div
         className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-6"
